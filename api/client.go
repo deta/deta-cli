@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	rootEndpoint  = "https://web.deta.sh"
-	authTokenPath = ".deta/creds"
+	rootEndpoint = "https://web.deta.sh"
 )
 
 // set with Makefile during compilation
@@ -21,7 +20,7 @@ var version string
 
 // DetaClient client that talks with the deta api
 type DetaClient struct {
-	rootEndpoint string // rootEndpoint
+	rootEndpoint string
 	client       *http.Client
 }
 

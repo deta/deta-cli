@@ -1,14 +1,7 @@
 package cmd
 
 import (
-	"bufio"
-	"fmt"
-	"os"
-	"strings"
-	"syscall"
-
-	"golang.org/x/crypto/ssh/terminal"
-
+	"github.com/deta/deta-cli/auth"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +11,7 @@ var (
 		Short: "login to deta",
 		RunE:  login,
 	}
+	authManager = auth.NewManager()
 )
 
 func init() {
@@ -25,26 +19,8 @@ func init() {
 }
 
 func login(cmd *cobra.Command, args []string) error {
-	u, p := promptCreds()
-	fmt.Println(u, p)
+	if err := authManager.Login(); err != nil {
+		return err
+	}
 	return nil
-}
-
-func promptCreds() (string, string) {
-	fmt.Print("Username: ")
-	reader := bufio.NewReader(os.Stdin)
-	username, err := reader.ReadString('\n')
-	if err != nil {
-		os.Stderr.WriteString("Failed to read username")
-		os.Exit(1)
-	}
-	username = strings.TrimSuffix(username, "\n")
-
-	fmt.Print("Password: ")
-	password, err := terminal.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		os.Stderr.WriteString("Failed to read password")
-		os.Exit(1)
-	}
-	return username, string(password)
 }
