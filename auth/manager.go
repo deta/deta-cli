@@ -112,16 +112,20 @@ func (m *Manager) GetAccessToken() (string, error) {
 	if err != nil {
 		return "", nil
 	}
+
 	tokensFilePath := filepath.Join(home, detaDir, authTokenPath)
 	f, err := os.Open(tokensFilePath)
 	if err != nil {
 		return "", err
 	}
+	defer f.Close()
+
 	reader := bufio.NewReader(f)
 	accessToken, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err
 	}
+
 	accessToken = strings.TrimSuffix(accessToken, "\n")
 	return "", nil
 }
