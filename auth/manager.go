@@ -17,8 +17,8 @@ import (
 
 const (
 	detaDir         = ".deta"
-	authTokenPath   = ".deta/tokens.txt"
-	localServerPort = ":9000"
+	authTokenPath   = ".deta/tokens"
+	localServerPort = ":9080"
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 
 // aws congito tokens
 type cognitoToken struct {
-	AccessToken  string `json:"acess_token"`
+	AccessToken  string `json:"access_token"`
 	IDToken      string `json:"id_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int64  `json:"expires_in"` // in seconds
@@ -53,7 +53,7 @@ func NewManager() *Manager {
 	}
 }
 
-// stores tokens in file ~/.deta/creds
+// stores tokens in file ~/.deta/tokens
 func (m *Manager) storeTokens(tokens *cognitoToken) error {
 	// TODO: windows compatibility
 	home, err := os.UserHomeDir()
@@ -68,7 +68,7 @@ func (m *Manager) storeTokens(tokens *cognitoToken) error {
 	}
 
 	tokensFilePath := filepath.Join(home, authTokenPath)
-	f, err := os.OpenFile(tokensFilePath, os.O_CREATE|os.O_WRONLY, 0760)
+	f, err := os.OpenFile(tokensFilePath, os.O_CREATE|os.O_WRONLY, 0660)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (m *Manager) GetAccessToken() (string, error) {
 		return "", nil
 	}
 
-	tokensFilePath := filepath.Join(home, detaDir, authTokenPath)
+	tokensFilePath := filepath.Join(home, authTokenPath)
 	f, err := os.Open(tokensFilePath)
 	if err != nil {
 		return "", err
@@ -127,7 +127,7 @@ func (m *Manager) GetAccessToken() (string, error) {
 	}
 
 	accessToken = strings.TrimSuffix(accessToken, "\n")
-	return "", nil
+	return accessToken, nil
 }
 
 // Login logs in to the user pool and stores the tokens
@@ -183,6 +183,7 @@ func (m *Manager) tokenHandler(w http.ResponseWriter, r *http.Request) {
 
 // starts a local server
 func (m *Manager) startLocalServer() {
+	// TODO: try another port if port is already in use
 	http.HandleFunc("/tokens", m.tokenHandler)
 	err := m.srv.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {

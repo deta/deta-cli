@@ -31,7 +31,8 @@ var (
 		Node:   "package.json",
 	}
 	detaDir      = ".deta"
-	progInfoFile = "progInfo"
+	userInfoFile = "user_info"
+	progInfoFile = "prog_info"
 	stateFile    = "state"
 )
 
@@ -39,20 +40,45 @@ var (
 type Manager struct {
 	rootDir      string // working directory for the program
 	detaPath     string // dir for storing program info and state
+	userInfoPath string // path to info file about the user
 	progInfoPath string // path to info file about the program
 	statePath    string // path to state file about the program
 }
 
 // NewManager returns a new runtime manager for the root dir of the program
-func NewManager(rootDir string) (*Manager, error) {
+func NewManager(root *string) (*Manager, error) {
+	var rootDir string
+	if root != nil {
+		rootDir = *root
+	} else {
+		wd, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		rootDir = wd
+	}
+
 	detaPath := filepath.Join(rootDir, detaDir)
 	err := os.MkdirAll(detaPath, 0760)
 	if err != nil {
 		return nil, err
 	}
+
+	// user info is stored in ~/.deta/userInfo as it's global
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	err = os.MkdirAll(filepath.Join(home, detaDir), 0760)
+	if err != nil {
+		return nil, err
+	}
+	userInfoPath := filepath.Join(home, detaDir, userInfoFile)
+
 	return &Manager{
 		rootDir:      rootDir,
 		detaPath:     detaPath,
+		userInfoPath: userInfoPath,
 		progInfoPath: filepath.Join(detaPath, progInfoFile),
 		statePath:    filepath.Join(detaPath, stateFile),
 	}, nil
@@ -77,6 +103,39 @@ func (m *Manager) GetProgInfo() (*ProgInfo, error) {
 		return nil, err
 	}
 	return progInfoFromBytes(contents)
+}
+
+// StoreUserInfo stores the user info
+func (m *Manager) StoreUserInfo(u *UserInfo) error {
+	marshalled, err := json.Marshal(u)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(m.userInfoPath, marshalled, 0660)
+}
+
+// GetUserInfo gets the program info stored
+func (m *Manager) GetUserInfo() (*UserInfo, error) {
+	contents, err := m.readFile(m.userInfoPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return userInfoFromBytes(contents)
+}
+
+// IsInitialized checks if the root directory is initialized as a deta program
+func (m *Manager) IsInitialized() (bool, error) {
+	_, err := os.Stat(m.progInfoPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 // GetRuntime figures out the runtime of the program from entrypoint file if present in the root dir
@@ -143,8 +202,8 @@ func (m *Manager) calcChecksum(path string) (string, error) {
 	return hashSum, nil
 }
 
-// stores hashes of the current state of all files(not hidden) in the root directory
-func (m *Manager) storeState() error {
+// StoreState stores hashes of the current state of all files(not hidden) in the root directory
+func (m *Manager) StoreState() error {
 	sm := make(stateMap)
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
 		hidden, err := m.isHidden(path)
@@ -202,7 +261,7 @@ func (m *Manager) getStoredState() (stateMap, error) {
 // readAll reads all the files and returns the contents as stateChanges
 func (m *Manager) readAll() (*StateChanges, error) {
 	sc := &StateChanges{
-		Changes: make(map[string][]byte),
+		Changes: make(map[string]string),
 	}
 
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
@@ -233,7 +292,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 		if err != nil {
 			return err
 		}
-		sc.Changes[path] = contents
+		sc.Changes[path] = string(contents)
 		return nil
 	})
 	if err != nil {
@@ -245,7 +304,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 // GetChanges checks if the state has changed in the root directory
 func (m *Manager) GetChanges() (*StateChanges, error) {
 	sc := &StateChanges{
-		Changes: make(map[string][]byte),
+		Changes: make(map[string]string),
 	}
 
 	storedState, err := m.getStoredState()
@@ -297,7 +356,7 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 			if err != nil {
 				return err
 			}
-			sc.Changes[path] = contents
+			sc.Changes[path] = string(contents)
 		}
 		return nil
 	})
