@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -139,6 +140,31 @@ func (m *Manager) IsInitialized() (bool, error) {
 			return false, nil
 		}
 		return false, err
+	}
+	return true, nil
+}
+
+// IsProgDirEmpty checks if dir contains any files/folders which are not hidden
+// if dir is nil, it sets the root dir
+func (m *Manager) IsProgDirEmpty() (bool, error) {
+	checkDir := m.rootDir
+	f, err := os.Open(checkDir)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	names, err := f.Readdirnames(-1)
+	if err == io.EOF {
+		return true, nil
+	}
+	for _, n := range names {
+		isHidden, err := m.isHidden(n)
+		if err != nil {
+			return false, err
+		}
+		if !isHidden {
+			return false, nil
+		}
 	}
 	return true, nil
 }
@@ -476,7 +502,7 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string) error {
 	writeDir := m.rootDir
 	// use root dir as dir to store if targetDir is not provided
-	if targetDir != nil {
+	if targetDir != nil && *targetDir != writeDir {
 		writeDir = filepath.Join(m.rootDir, *targetDir)
 	}
 

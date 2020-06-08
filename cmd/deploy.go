@@ -36,6 +36,15 @@ func deploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	isInitialized, err := runtimeManager.IsInitialized()
+	if err != nil {
+		return err
+	}
+
+	if !isInitialized {
+		return fmt.Errorf("deta program not initilialized. see `deta new --help` to create a program")
+	}
+
 	progInfo, err := runtimeManager.GetProgInfo()
 	if err != nil {
 		return err
@@ -59,5 +68,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	runtimeManager.StoreState()
 	return nil
 }

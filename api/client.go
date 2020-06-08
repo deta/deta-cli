@@ -39,6 +39,10 @@ func NewDetaClient() *DetaClient {
 	if version == "DEV" {
 		fmt.Println("Development mode")
 		e = os.Getenv("DEV_ENDPOINT")
+		if e == "" {
+			os.Stderr.WriteString("Env DEV_ENDPOINT not set\n")
+			os.Exit(1)
+		}
 	} else {
 		e = rootEndpoint
 	}
@@ -96,13 +100,15 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	}
 
-	// headers
-	if i.ContentType != "" {
-		req.Header.Set("Content-type", i.ContentType)
-	} else if i.Body != nil {
+	if i.Body != nil {
 		// default set to application/json
 		req.Header.Set("Content-type", "application/json")
+		if i.ContentType != "" {
+			req.Header.Set("Content-type", i.ContentType)
+		}
 	}
+
+	// headers
 	for k, v := range i.Headers {
 		req.Header.Set(k, v)
 	}

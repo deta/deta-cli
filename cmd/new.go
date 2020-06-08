@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/deta/deta-cli/api"
 
@@ -18,7 +19,7 @@ var (
 	newProgName string
 
 	newCmd = &cobra.Command{
-		Use:   "new",
+		Use:   "new [flags] [path]",
 		Short: "Create a new program",
 		RunE:  new,
 		Args:  cobra.MaximumNArgs(1),
@@ -26,14 +27,17 @@ var (
 )
 
 func init() {
+	// flags
 	newCmd.Flags().BoolVar(&nodeFlag, "node", false, "create a program with node runtime")
 	newCmd.Flags().BoolVar(&pythonFlag, "python", false, "create a program with python runtime")
 	newCmd.Flags().StringVarP(&newProgName, "name", "n", "", "name of the new program")
+
+	rootCmd.AddCommand(newCmd)
 }
 
 func new(cmd *cobra.Command, args []string) error {
 	if nodeFlag && pythonFlag {
-		os.Stderr.WriteString("Can not set both node and python flags")
+		return fmt.Errorf("can not set both node and python flags")
 	}
 
 	var wd string
@@ -66,30 +70,51 @@ func new(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if isInitialized {
-		os.Stderr.WriteString(fmt.Sprintf("A deta program already present in '%s'", wd))
-		return nil
+		return fmt.Errorf("a deta program already present in '%s'", wd)
+	}
+
+	// check if program root dir is empty
+	isEmpty, err := runtimeManager.IsProgDirEmpty()
+	if err != nil {
+		return err
+	}
+
+	var progRuntime string
+	if !isEmpty {
+		progRuntime, err = runtimeManager.GetRuntime()
+		if err != nil {
+			return err
+		}
+		if nodeFlag && progRuntime != runtime.Node {
+			return fmt.Errorf("'%s' does not contain node entrypoint file", wd)
+		} else if pythonFlag && progRuntime != runtime.Python {
+			return fmt.Errorf("'%s' does not contain python entrypoint file", wd)
+		}
+	} else {
+		if nodeFlag {
+			progRuntime = runtime.Node
+		} else if pythonFlag {
+			progRuntime = runtime.Python
+		} else {
+			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new -node' or 'deta new -python\n'")
+			return nil
+		}
 	}
 
 	// get user information
 	userInfo, err := runtimeManager.GetUserInfo()
 	if err != nil {
-		os.Stderr.WriteString("No user details found. Please, log in with 'deta login'.")
 		return err
 	}
 
-	req := &api.NewProgramRequest{
-		Space: userInfo.DefaultSpace,
-		Name:  newProgName,
+	if userInfo == nil {
+		return fmt.Errorf("login required, log in with 'deta login'")
 	}
 
-	// check for runtime
-	if nodeFlag {
-		req.Runtime = runtime.Node
-	} else if pythonFlag {
-		req.Runtime = runtime.Python
-	} else {
-		os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new -node' or 'deta new -python'")
-		return nil
+	req := &api.NewProgramRequest{
+		Space:   userInfo.DefaultSpace,
+		Name:    newProgName,
+		Runtime: progRuntime,
 	}
 
 	// send new program request
@@ -117,24 +142,46 @@ func new(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// download created program
-	o, err := client.DownloadProgram(&api.DownloadProgramRequest{
+	// dowload template files if dir is empty
+	if isEmpty {
+		// wait for permissions to propagate before viewing program
+		time.Sleep(1 * time.Second)
+		o, err := client.DownloadProgram(&api.DownloadProgramRequest{
+			ProgramID: res.ID,
+			Runtime:   res.Runtime,
+			Account:   res.Account,
+			Region:    res.Region,
+		})
+		if err != nil {
+			return err
+		}
+		// write downloaded files to dir
+		err = runtimeManager.WriteProgramFiles(o.Files, nil)
+		if err != nil {
+			return err
+		}
+		// store the program state
+		// ignore error here as it's okay
+		// if state is not stored for new program
+		runtimeManager.StoreState()
+		return nil
+	}
+
+	c, err := runtimeManager.GetChanges()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.Deploy(&api.DeployRequest{
 		ProgramID: res.ID,
-		Runtime:   res.Runtime,
+		Changes:   c.Changes,
+		Deletions: c.Deletions,
 		Account:   res.Account,
 		Region:    res.Region,
 	})
 	if err != nil {
 		return err
 	}
-
-	// write downloaded files to dir
-	err = runtimeManager.WriteProgramFiles(o.Files, &wd)
-	if err != nil {
-		return err
-	}
-
-	// store the program state
-	go runtimeManager.StoreState()
+	runtimeManager.StoreState()
 	return nil
 }

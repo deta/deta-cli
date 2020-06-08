@@ -34,10 +34,11 @@ func (c *DetaClient) Deploy(r *DeployRequest) (*DeployResponse, error) {
 	c.injectResourceHeader(headers, r.Account, r.Region)
 
 	i := &requestInput{
-		Path:    fmt.Sprintf("/%s/", patcherPath),
-		Method:  "POST",
-		Headers: headers,
-		Body:    r,
+		Path:      fmt.Sprintf("/%s/", patcherPath),
+		Method:    "POST",
+		Headers:   headers,
+		Body:      r,
+		NeedsAuth: true,
 	}
 	o, err := c.request(i)
 	if err != nil {
@@ -61,11 +62,11 @@ func (c *DetaClient) Deploy(r *DeployRequest) (*DeployResponse, error) {
 
 // NewProgramRequest request to create a new program
 type NewProgramRequest struct {
-	Space   int64  `json:"spaceID"`
-	Group   string `json:"group"`
-	Name    string `json:"name"`
-	Runtime string `json:"runtime"`
-	Fork    string `json:"fork"`
+	Space   int64   `json:"spaceID"`
+	Group   string  `json:"group"`
+	Name    string  `json:"name"`
+	Runtime string  `json:"runtime"`
+	Fork    *string `json:"fork"`
 }
 
 // NewProgramResponse response to a new program request
@@ -89,6 +90,7 @@ func (c *DetaClient) NewProgram(r *NewProgramRequest) (*NewProgramResponse, erro
 		Path:      fmt.Sprintf("/%s/", "programs"),
 		Method:    "POST",
 		NeedsAuth: true,
+		Body:      *r,
 	}
 
 	o, err := c.request(i)
@@ -96,7 +98,7 @@ func (c *DetaClient) NewProgram(r *NewProgramRequest) (*NewProgramResponse, erro
 		return nil, err
 	}
 
-	if o.Status != 201 {
+	if o.Status != 200 {
 		msg := o.Error.Message
 		if msg == "" {
 			msg = o.Error.Errors[0]
@@ -142,6 +144,7 @@ func (c *DetaClient) ViewProgram(r *ViewProgramRequest) (*ViewProgramResponse, e
 		Method:      "GET",
 		Headers:     headers,
 		QueryParams: queryParams,
+		NeedsAuth:   true,
 	}
 
 	o, err := c.request(i)
@@ -190,6 +193,7 @@ func (c *DetaClient) ViewProgramFile(r *ViewProgramFileRequest) (*ViewProgramFil
 		Method:      "GET",
 		Headers:     headers,
 		QueryParams: queryParams,
+		NeedsAuth:   true,
 	}
 
 	o, err := c.request(i)
