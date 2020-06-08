@@ -205,7 +205,7 @@ func (m *Manager) isHidden(path string) (bool, error) {
 		// TODO: implement for windows
 		return false, fmt.Errorf("Not implemented")
 	default:
-		return strings.HasPrefix(filename, "."), nil
+		return strings.HasPrefix(filename, ".") && filename != ".", nil
 	}
 }
 
@@ -237,6 +237,15 @@ func (m *Manager) calcChecksum(path string) (string, error) {
 func (m *Manager) StoreState() error {
 	sm := make(stateMap)
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		path, err = filepath.Rel(m.rootDir, path)
+		if err != nil {
+			return err
+		}
+
 		hidden, err := m.isHidden(path)
 		if err != nil {
 			return err
@@ -300,6 +309,11 @@ func (m *Manager) readAll() (*StateChanges, error) {
 		if err != nil {
 			return err
 		}
+		path, err = filepath.Rel(m.rootDir, path)
+		if err != nil {
+			return err
+		}
+
 		hidden, err := m.isHidden(path)
 		if err != nil {
 			return err
@@ -358,7 +372,10 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		if err != nil {
 			return err
 		}
-
+		path, err = filepath.Rel(m.rootDir, path)
+		if err != nil {
+			return err
+		}
 		hidden, err := m.isHidden(path)
 		if err != nil {
 			return err
@@ -378,13 +395,13 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 			delete(deletions, path)
 		}
 
-		checksum, err := m.calcChecksum(path)
+		checksum, err := m.calcChecksum(filepath.Join(m.rootDir, path))
 		if err != nil {
 			return err
 		}
 
 		if storedState[path] != checksum {
-			contents, err := m.readFile(path)
+			contents, err := m.readFile(filepath.Join(m.rootDir, path))
 			if err != nil {
 				return err
 			}
@@ -393,11 +410,19 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		return nil
 	})
 
+	if err != nil {
+		return nil, err
+	}
+
 	sc.Deletions = make([]string, len(deletions))
 	i := 0
 	for k := range deletions {
 		sc.Deletions[i] = k
 		i++
+	}
+
+	if len(sc.Changes) == 0 && len(sc.Deletions) == 0 {
+		return nil, nil
 	}
 	return sc, nil
 }

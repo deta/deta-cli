@@ -16,7 +16,7 @@ func (c *DetaClient) injectResourceHeader(headers map[string]string, account, re
 
 // DeployRequest deploy program request
 type DeployRequest struct {
-	ProgramID string            `json:"program_id"`
+	ProgramID string            `json:"pid"`
 	Changes   map[string]string `json:"change"`
 	Deletions []string          `json:"delete"`
 	Account   string            `json:"-"`

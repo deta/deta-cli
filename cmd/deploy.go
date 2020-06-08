@@ -53,8 +53,9 @@ func deploy(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
 	if c == nil {
-		fmt.Println("No changes to be deployed")
+		fmt.Println("Program already up to date.")
 		return nil
 	}
 
