@@ -18,6 +18,11 @@ const (
 	Python = "python"
 	// Node runtime
 	Node = "node"
+
+	// drwxrw----
+	dirPermMode = 0760
+	// -rw-rw---
+	filePermMode = 0660
 )
 
 var (
@@ -59,7 +64,7 @@ func NewManager(root *string) (*Manager, error) {
 	}
 
 	detaPath := filepath.Join(rootDir, detaDir)
-	err := os.MkdirAll(detaPath, 0760)
+	err := os.MkdirAll(detaPath, dirPermMode)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +74,7 @@ func NewManager(root *string) (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = os.MkdirAll(filepath.Join(home, detaDir), 0760)
+	err = os.MkdirAll(filepath.Join(home, detaDir), dirPermMode)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +95,7 @@ func (m *Manager) StoreProgInfo(p *ProgInfo) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(m.progInfoPath, marshalled, 0660)
+	return ioutil.WriteFile(m.progInfoPath, marshalled, filePermMode)
 }
 
 // GetProgInfo gets the program info stored
@@ -111,7 +116,7 @@ func (m *Manager) StoreUserInfo(u *UserInfo) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(m.userInfoPath, marshalled, 0660)
+	return ioutil.WriteFile(m.userInfoPath, marshalled, filePermMode)
 }
 
 // GetUserInfo gets the program info stored
@@ -202,7 +207,7 @@ func (m *Manager) calcChecksum(path string) (string, error) {
 	return hashSum, nil
 }
 
-// StoreState stores hashes of the current state of all files(not hidden) in the root directory
+// StoreState stores hashes of the current state of all files(not hidden) in the root program directory
 func (m *Manager) StoreState() error {
 	sm := make(stateMap)
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
@@ -210,6 +215,7 @@ func (m *Manager) StoreState() error {
 		if err != nil {
 			return err
 		}
+
 		if info.IsDir() {
 			// skip hidden directories
 			if hidden {
@@ -238,7 +244,7 @@ func (m *Manager) StoreState() error {
 		return err
 	}
 
-	err = ioutil.WriteFile(m.statePath, marshalled, 0660)
+	err = ioutil.WriteFile(m.statePath, marshalled, filePermMode)
 	if err != nil {
 		return err
 	}
@@ -464,4 +470,35 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 		dc.Removed = append(dc.Removed, d)
 	}
 	return &dc, nil
+}
+
+// WriteProgramFiles writes program files to target dir
+func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string) error {
+	writeDir := m.rootDir
+	// use root dir as dir to store if targetDir is not provided
+	if targetDir != nil {
+		writeDir = filepath.Join(m.rootDir, *targetDir)
+	}
+
+	// need to create dirs first before writing the files
+	for f := range progFiles {
+		dir, _ := filepath.Split(f)
+		if dir != "" {
+			dir = filepath.Join(writeDir, dir)
+			err := os.MkdirAll(dir, dirPermMode)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// write the files
+	for file, content := range progFiles {
+		file = filepath.Join(writeDir, file)
+		err := ioutil.WriteFile(file, []byte(content), filePermMode)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

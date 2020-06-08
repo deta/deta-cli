@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // injects X-Resource-Addr header from account and region
@@ -210,6 +211,58 @@ func (c *DetaClient) ViewProgramFile(r *ViewProgramFileRequest) (*ViewProgramFil
 		return nil, fmt.Errorf("failed to get '%s': %v", r.Filepath, err)
 	}
 	return &resp, nil
+}
+
+// DownloadProgramRequest download program request
+type DownloadProgramRequest struct {
+	ProgramID string
+	Runtime   string
+	Account   string
+	Region    string
+}
+
+// DownloadProgramResponse download program response
+type DownloadProgramResponse struct {
+	Files map[string]string
+}
+
+// DownloadProgram download all program files
+func (c *DetaClient) DownloadProgram(req *DownloadProgramRequest) (*DownloadProgramResponse, error) {
+	progFiles := make(map[string]string)
+
+	viewProgReq := &ViewProgramRequest{
+		ProgramID: req.ProgramID,
+		Runtime:   req.Runtime,
+		Account:   req.Account,
+		Region:    req.Region,
+	}
+	o, err := c.ViewProgram(viewProgReq)
+	if err != nil {
+		return nil, err
+	}
+
+	progFiles[o.Entrypoint] = o.Contents
+
+	for _, file := range o.FileTree {
+		if file != o.Entrypoint {
+			if !strings.HasSuffix(file, "/") {
+				viewProgFileReq := &ViewProgramFileRequest{
+					ProgramID: req.ProgramID,
+					Filepath:  file,
+					Account:   req.ProgramID,
+					Region:    req.Region,
+				}
+				contents, err := c.ViewProgramFile(viewProgFileReq)
+				if err != nil {
+					return nil, err
+				}
+				progFiles[file] = string(*contents)
+			}
+			// empty folders
+			progFiles[file] = ""
+		}
+	}
+	return &DownloadProgramResponse{Files: progFiles}, err
 }
 
 // ListSpaceItem an item in ListSpacesResponse
