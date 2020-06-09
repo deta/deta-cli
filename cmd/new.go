@@ -182,6 +182,31 @@ func new(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	dc, err := runtimeManager.GetDepChanges()
+	if err != nil {
+		return err
+	}
 	runtimeManager.StoreState()
+
+	msg := "Successfully created new program."
+	if dc != nil {
+		msg = fmt.Sprintf("%s%s", msg, "Adding dependencies...")
+		command := runtime.DepCommands[res.Runtime]
+		if len(dc.Added) > 0 {
+			installCmd := fmt.Sprintf("%s install", command)
+			for _, a := range dc.Added {
+				installCmd = fmt.Sprintf("%s %s", installCmd, a)
+			}
+			o, err := client.UpdateProgDeps(&api.UpdateProgDepsRequest{
+				ProgramID: res.ID,
+				Command:   installCmd,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to add dependencies: %v", err)
+			}
+			fmt.Println(o.Output)
+		}
+	}
 	return nil
 }

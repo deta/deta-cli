@@ -40,6 +40,12 @@ var (
 	userInfoFile = "user_info"
 	progInfoFile = "prog_info"
 	stateFile    = "state"
+
+	// DepCommands maps runtimes to the dependency managers
+	DepCommands = map[string]string{
+		Python: "pip",
+		Node:   "npm",
+	}
 )
 
 // Manager runtime manager handles files management and other services
