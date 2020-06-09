@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	rootEndpoint = "https://web.deta.sh"
+	rootEndpoint = "https://v1.deta.sh"
 	patcherPath  = "patcher"
 	viewerPath   = "viewer"
 	pigeonPath   = "pigeon"

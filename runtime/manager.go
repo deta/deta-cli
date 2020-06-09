@@ -522,6 +522,11 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 	for d := range removedDeps {
 		dc.Removed = append(dc.Removed, d)
 	}
+
+	if len(dc.Added) == 0 && len(dc.Removed) == 0 {
+		return nil, nil
+	}
+
 	return &dc, nil
 }
 
@@ -591,6 +596,11 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 	for e := range removedEnvs {
 		ec.Removed = append(ec.Removed, e)
 	}
+
+	if len(ec.Added) == 0 && len(ec.Removed) == 0 {
+		return nil, nil
+	}
+
 	return &ec, nil
 }
 
