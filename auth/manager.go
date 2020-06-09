@@ -106,6 +106,10 @@ func (m *Manager) storeTokens(tokens *cognitoToken) error {
 	return nil
 }
 
+type tokenPayload struct {
+	ExpiresIn int64 `json:"exp"`
+}
+
 // pulls token expire time from token, time is in seconds since Unix epoch
 func (m *Manager) expiresInFromToken(accessToken string) (string, error) {
 	tokenParts := strings.Split(accessToken, ".")
@@ -113,22 +117,21 @@ func (m *Manager) expiresInFromToken(accessToken string) (string, error) {
 		return "", fmt.Errorf("access token is of invalid format")
 	}
 
-	var decoded []byte
-	_, err := base64.StdEncoding.Decode(decoded, []byte(tokenParts[1]))
+	decoded, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
 	if err != nil {
 		return "", err
 	}
 
-	var payload map[string]string
+	var payload tokenPayload
 	err = json.Unmarshal(decoded, &payload)
 	if err != nil {
 		return "", err
 	}
-	expiresIn, ok := payload["exp"]
-	if !ok {
+	e := payload.ExpiresIn
+	if e == 0 {
 		return "", fmt.Errorf("No expire time found in access token")
 	}
-	return expiresIn, nil
+	return fmt.Sprintf("%d", e), nil
 }
 
 // GetAccessToken retrieves the access token from storage
