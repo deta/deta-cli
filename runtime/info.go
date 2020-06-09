@@ -8,6 +8,12 @@ type DepChanges struct {
 	Removed []string
 }
 
+// EnvChanges changes in env vars keys
+type EnvChanges struct {
+	Added   map[string]string
+	Removed []string
+}
+
 // ProgInfo program info
 type ProgInfo struct {
 	ID      string   `json:"id"`

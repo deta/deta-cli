@@ -480,13 +480,14 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 		}, nil
 	}
 
+	deps, err := m.readDeps(progInfo.Runtime)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(progInfo.Deps) == 0 {
 		if progInfo.Runtime == "" {
 			progInfo.Runtime, err = m.GetRuntime()
-		}
-		deps, err := m.readDeps(progInfo.Runtime)
-		if err != nil {
-			return nil, err
 		}
 		return &DepChanges{
 			Added: deps,
@@ -494,11 +495,6 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 	}
 
 	var dc DepChanges
-
-	deps, err := m.readDeps(progInfo.Runtime)
-	if err != nil {
-		return nil, err
-	}
 
 	// mark all stored deps as removed deps
 	// mark them as unremoved later if seen them in the deps file
@@ -521,6 +517,75 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 		dc.Removed = append(dc.Removed, d)
 	}
 	return &dc, nil
+}
+
+// readEnvs read env variables from the env file
+func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
+	contents, err := m.readFile(filepath.Join(m.rootDir, envFile))
+	if err != nil {
+		return nil, err
+	}
+	if len(contents) == 0 {
+		return nil, nil
+	}
+	lines := strings.Split(string(contents), "\n")
+	// expect format KEY=VALUE
+	envs := make(map[string]string)
+	for _, l := range lines {
+		vars := strings.Split(l, "=")
+		if len(vars) != 2 {
+			return nil, fmt.Errorf("Env file has invalid format")
+		}
+		envs[vars[0]] = vars[1]
+	}
+	return envs, nil
+}
+
+// GetEnvChanges gets changes in stored env keys and keys of the envFile
+func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
+	envs, err := m.readEnvs(envFile)
+	if err != nil {
+		return nil, err
+	}
+
+	progInfo, err := m.GetProgInfo()
+	if progInfo == nil {
+		return &EnvChanges{
+			Added: envs,
+		}, nil
+	}
+
+	if len(progInfo.Envs) == 0 {
+		return &EnvChanges{
+			Added: envs,
+		}, nil
+	}
+
+	ec := EnvChanges{
+		Added: make(map[string]string),
+	}
+
+	// mark all stored envs as removed
+	// mark them as unremoved later if seen them in the deps file
+	removedEnvs := make(map[string]struct{}, len(progInfo.Envs))
+	for _, e := range progInfo.Envs {
+		removedEnvs[e] = struct{}{}
+	}
+
+	for k, v := range envs {
+		if _, ok := removedEnvs[k]; ok {
+			// remove from deleted if seen
+			delete(removedEnvs, k)
+		} else {
+			// add as new env if not seen
+			ec.Added[k] = v
+		}
+	}
+
+	for e := range removedEnvs {
+		ec.Removed = append(ec.Removed, e)
+	}
+	return &ec, nil
 }
 
 // WriteProgramFiles writes program files to target dir

@@ -306,3 +306,111 @@ func (c *DetaClient) ListSpaces() (ListSpacesResponse, error) {
 	}
 	return resp, nil
 }
+
+// UpdateProgNameRequest request to update program name
+type UpdateProgNameRequest struct {
+	ProgramID string `json:"-"`
+	Name      string `json:"name"`
+}
+
+// UpdateProgName update program name
+func (c *DetaClient) UpdateProgName(req *UpdateProgNameRequest) error {
+
+	i := &requestInput{
+		Path:      fmt.Sprintf("/programs/%s", req.ProgramID),
+		Method:    "PATCH",
+		Body:      req,
+		NeedsAuth: true,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return fmt.Errorf("failed to update program name: %s", msg)
+	}
+	return nil
+}
+
+// UpdateProgEnvsRequest request to update program envs
+type UpdateProgEnvsRequest struct {
+	ProgramID string
+	Account   string
+	Region    string
+	Vars      map[string]*string
+}
+
+// UpdateProgEnvs update program environment variables
+func (c *DetaClient) UpdateProgEnvs(req *UpdateProgEnvsRequest) error {
+	headers := make(map[string]string)
+	c.injectResourceHeader(headers, req.Account, req.Region)
+
+	i := &requestInput{
+		Path:      fmt.Sprintf("/programs/%s/envs", req.ProgramID),
+		Headers:   headers,
+		NeedsAuth: true,
+		Method:    "PATCH",
+		Body:      req.Vars,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return fmt.Errorf("failed to update env vars: %s", msg)
+	}
+	return nil
+}
+
+// UpdateProgDepsRequest request to update program dependencies
+type UpdateProgDepsRequest struct {
+	ProgramID string `json:"program_id"`
+	Command   string `json:"command"`
+}
+
+// UpdateProgDepsResponse response to update program dependencies request
+type UpdateProgDepsResponse struct {
+	Output string `json:"output"`
+}
+
+// UpdateProgDeps update program dependencies
+func (c *DetaClient) UpdateProgDeps(req *UpdateProgDepsRequest) (*UpdateProgDepsResponse, error) {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/%s/commands", pigeonPath),
+		Method:    "POST",
+		NeedsAuth: true,
+		Body:      req,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return nil, err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return nil, fmt.Errorf("failed to update dependencies: %s", msg)
+	}
+
+	var resp UpdateProgDepsResponse
+	err = json.Unmarshal(o.Body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
