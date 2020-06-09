@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	updateCmd.Flags().StringVarP(&envsPath, "env", "-e", "", "path to env file")
+	updateCmd.Flags().StringVarP(&envsPath, "env", "e", "", "path to env file")
 	updateCmd.Flags().StringVarP(&newProgName, "name", "n", "", "new name of the program")
 }
 
