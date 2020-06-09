@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -16,14 +17,16 @@ import (
 )
 
 const (
-	detaDir         = ".deta"
-	authTokenPath   = ".deta/tokens"
-	localServerPort = ":9080"
+	detaDir       = ".deta"
+	authTokenPath = ".deta/tokens"
 )
 
 var (
 	// set with Makefile during compilation
 	loginURL string
+
+	// port to start local server for login
+	localServerPort int
 )
 
 // aws congito tokens
@@ -43,9 +46,7 @@ type Manager struct {
 
 // NewManager returns a new auth Manager
 func NewManager() *Manager {
-	srv := &http.Server{
-		Addr: localServerPort,
-	}
+	srv := &http.Server{}
 	return &Manager{
 		tokenChan: make(chan *cognitoToken, 1),
 		errChan:   make(chan error, 1),
@@ -132,8 +133,12 @@ func (m *Manager) GetAccessToken() (string, error) {
 
 // Login logs in to the user pool and stores the tokens
 func (m *Manager) Login() error {
+	err := m.useFreePort()
+	if err != nil {
+		return err
+	}
 	fmt.Println("Please, log in from the web page. Waiting..")
-	err := m.openLoginPage()
+	err = m.openLoginPage()
 	if err != nil {
 		return err
 	}
@@ -145,6 +150,7 @@ func (m *Manager) Login() error {
 }
 
 func (m *Manager) openLoginPage() error {
+	loginURL = fmt.Sprintf("%s?port=%d", loginURL, localServerPort)
 	switch runtime.GOOS {
 	case "linux":
 		return exec.Command("xdg-open", loginURL).Start()
@@ -183,12 +189,29 @@ func (m *Manager) tokenHandler(w http.ResponseWriter, r *http.Request) {
 
 // starts a local server
 func (m *Manager) startLocalServer() {
-	// TODO: try another port if port is already in use
 	http.HandleFunc("/tokens", m.tokenHandler)
+
+	m.srv.Addr = fmt.Sprintf(":%d", localServerPort)
 	err := m.srv.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		m.errChan <- err
 	}
+}
+
+//  uses a free TCP port
+func (m *Manager) useFreePort() error {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return err
+	}
+	defer l.Close()
+	localServerPort = l.Addr().(*net.TCPAddr).Port
+	return nil
 }
 
 // shuts the server down
