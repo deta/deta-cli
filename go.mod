@@ -15,4 +15,6 @@ replace github.com/deta/deta-cli/cmd => ./cmd
 
 replace github.com/deta/deta-cli/auth => ./auth
 
+replace github.com/deta/deta-cli/api => ./api
+
 replace github.com/deta/deta-cli/runtime => ./runtime

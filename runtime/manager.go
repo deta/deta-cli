@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,6 +19,11 @@ const (
 	Python = "python"
 	// Node runtime
 	Node = "node"
+
+	// drwxrw----
+	dirPermMode = 0760
+	// -rw-rw---
+	filePermMode = 0660
 )
 
 var (
@@ -31,28 +37,60 @@ var (
 		Node:   "package.json",
 	}
 	detaDir      = ".deta"
-	progInfoFile = "progInfo"
+	userInfoFile = "user_info"
+	progInfoFile = "prog_info"
 	stateFile    = "state"
+
+	// DepCommands maps runtimes to the dependency managers
+	DepCommands = map[string]string{
+		Python: "pip",
+		Node:   "npm",
+	}
 )
 
 // Manager runtime manager handles files management and other services
 type Manager struct {
 	rootDir      string // working directory for the program
 	detaPath     string // dir for storing program info and state
+	userInfoPath string // path to info file about the user
 	progInfoPath string // path to info file about the program
 	statePath    string // path to state file about the program
 }
 
 // NewManager returns a new runtime manager for the root dir of the program
-func NewManager(rootDir string) (*Manager, error) {
+func NewManager(root *string) (*Manager, error) {
+	var rootDir string
+	if root != nil {
+		rootDir = *root
+	} else {
+		wd, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		rootDir = wd
+	}
+
 	detaPath := filepath.Join(rootDir, detaDir)
-	err := os.MkdirAll(detaPath, 0760)
+	err := os.MkdirAll(detaPath, dirPermMode)
 	if err != nil {
 		return nil, err
 	}
+
+	// user info is stored in ~/.deta/userInfo as it's global
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	err = os.MkdirAll(filepath.Join(home, detaDir), dirPermMode)
+	if err != nil {
+		return nil, err
+	}
+	userInfoPath := filepath.Join(home, detaDir, userInfoFile)
+
 	return &Manager{
 		rootDir:      rootDir,
 		detaPath:     detaPath,
+		userInfoPath: userInfoPath,
 		progInfoPath: filepath.Join(detaPath, progInfoFile),
 		statePath:    filepath.Join(detaPath, stateFile),
 	}, nil
@@ -64,7 +102,7 @@ func (m *Manager) StoreProgInfo(p *ProgInfo) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(m.progInfoPath, marshalled, 0660)
+	return ioutil.WriteFile(m.progInfoPath, marshalled, filePermMode)
 }
 
 // GetProgInfo gets the program info stored
@@ -77,6 +115,64 @@ func (m *Manager) GetProgInfo() (*ProgInfo, error) {
 		return nil, err
 	}
 	return progInfoFromBytes(contents)
+}
+
+// StoreUserInfo stores the user info
+func (m *Manager) StoreUserInfo(u *UserInfo) error {
+	marshalled, err := json.Marshal(u)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(m.userInfoPath, marshalled, filePermMode)
+}
+
+// GetUserInfo gets the program info stored
+func (m *Manager) GetUserInfo() (*UserInfo, error) {
+	contents, err := m.readFile(m.userInfoPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return userInfoFromBytes(contents)
+}
+
+// IsInitialized checks if the root directory is initialized as a deta program
+func (m *Manager) IsInitialized() (bool, error) {
+	_, err := os.Stat(m.progInfoPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// IsProgDirEmpty checks if dir contains any files/folders which are not hidden
+// if dir is nil, it sets the root dir
+func (m *Manager) IsProgDirEmpty() (bool, error) {
+	checkDir := m.rootDir
+	f, err := os.Open(checkDir)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	names, err := f.Readdirnames(-1)
+	if err == io.EOF {
+		return true, nil
+	}
+	for _, n := range names {
+		isHidden, err := m.isHidden(n)
+		if err != nil {
+			return false, err
+		}
+		if !isHidden {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // GetRuntime figures out the runtime of the program from entrypoint file if present in the root dir
@@ -115,7 +211,7 @@ func (m *Manager) isHidden(path string) (bool, error) {
 		// TODO: implement for windows
 		return false, fmt.Errorf("Not implemented")
 	default:
-		return strings.HasPrefix(filename, "."), nil
+		return strings.HasPrefix(filename, ".") && filename != ".", nil
 	}
 }
 
@@ -143,14 +239,24 @@ func (m *Manager) calcChecksum(path string) (string, error) {
 	return hashSum, nil
 }
 
-// stores hashes of the current state of all files(not hidden) in the root directory
-func (m *Manager) storeState() error {
+// StoreState stores hashes of the current state of all files(not hidden) in the root program directory
+func (m *Manager) StoreState() error {
 	sm := make(stateMap)
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		path, err = filepath.Rel(m.rootDir, path)
+		if err != nil {
+			return err
+		}
+
 		hidden, err := m.isHidden(path)
 		if err != nil {
 			return err
 		}
+
 		if info.IsDir() {
 			// skip hidden directories
 			if hidden {
@@ -179,7 +285,7 @@ func (m *Manager) storeState() error {
 		return err
 	}
 
-	err = ioutil.WriteFile(m.statePath, marshalled, 0660)
+	err = ioutil.WriteFile(m.statePath, marshalled, filePermMode)
 	if err != nil {
 		return err
 	}
@@ -202,13 +308,18 @@ func (m *Manager) getStoredState() (stateMap, error) {
 // readAll reads all the files and returns the contents as stateChanges
 func (m *Manager) readAll() (*StateChanges, error) {
 	sc := &StateChanges{
-		Changes: make(map[string][]byte),
+		Changes: make(map[string]string),
 	}
 
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
+		path, err = filepath.Rel(m.rootDir, path)
+		if err != nil {
+			return err
+		}
+
 		hidden, err := m.isHidden(path)
 		if err != nil {
 			return err
@@ -233,7 +344,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 		if err != nil {
 			return err
 		}
-		sc.Changes[path] = contents
+		sc.Changes[path] = string(contents)
 		return nil
 	})
 	if err != nil {
@@ -245,7 +356,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 // GetChanges checks if the state has changed in the root directory
 func (m *Manager) GetChanges() (*StateChanges, error) {
 	sc := &StateChanges{
-		Changes: make(map[string][]byte),
+		Changes: make(map[string]string),
 	}
 
 	storedState, err := m.getStoredState()
@@ -267,7 +378,10 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		if err != nil {
 			return err
 		}
-
+		path, err = filepath.Rel(m.rootDir, path)
+		if err != nil {
+			return err
+		}
 		hidden, err := m.isHidden(path)
 		if err != nil {
 			return err
@@ -287,26 +401,34 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 			delete(deletions, path)
 		}
 
-		checksum, err := m.calcChecksum(path)
+		checksum, err := m.calcChecksum(filepath.Join(m.rootDir, path))
 		if err != nil {
 			return err
 		}
 
 		if storedState[path] != checksum {
-			contents, err := m.readFile(path)
+			contents, err := m.readFile(filepath.Join(m.rootDir, path))
 			if err != nil {
 				return err
 			}
-			sc.Changes[path] = contents
+			sc.Changes[path] = string(contents)
 		}
 		return nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	sc.Deletions = make([]string, len(deletions))
 	i := 0
 	for k := range deletions {
 		sc.Deletions[i] = k
 		i++
+	}
+
+	if len(sc.Changes) == 0 && len(sc.Deletions) == 0 {
+		return nil, nil
 	}
 	return sc, nil
 }
@@ -364,13 +486,14 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 		}, nil
 	}
 
+	deps, err := m.readDeps(progInfo.Runtime)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(progInfo.Deps) == 0 {
 		if progInfo.Runtime == "" {
 			progInfo.Runtime, err = m.GetRuntime()
-		}
-		deps, err := m.readDeps(progInfo.Runtime)
-		if err != nil {
-			return nil, err
 		}
 		return &DepChanges{
 			Added: deps,
@@ -378,11 +501,6 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 	}
 
 	var dc DepChanges
-
-	deps, err := m.readDeps(progInfo.Runtime)
-	if err != nil {
-		return nil, err
-	}
 
 	// mark all stored deps as removed deps
 	// mark them as unremoved later if seen them in the deps file
@@ -404,5 +522,115 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 	for d := range removedDeps {
 		dc.Removed = append(dc.Removed, d)
 	}
+
+	if len(dc.Added) == 0 && len(dc.Removed) == 0 {
+		return nil, nil
+	}
+
 	return &dc, nil
+}
+
+// readEnvs read env variables from the env file
+func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
+	contents, err := m.readFile(filepath.Join(m.rootDir, envFile))
+	if err != nil {
+		return nil, err
+	}
+	if len(contents) == 0 {
+		return nil, nil
+	}
+	lines := strings.Split(string(contents), "\n")
+	// expect format KEY=VALUE
+	envs := make(map[string]string)
+	for _, l := range lines {
+		vars := strings.Split(l, "=")
+		if len(vars) != 2 {
+			return nil, fmt.Errorf("Env file has invalid format")
+		}
+		envs[vars[0]] = vars[1]
+	}
+	return envs, nil
+}
+
+// GetEnvChanges gets changes in stored env keys and keys of the envFile
+func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
+	envs, err := m.readEnvs(envFile)
+	if err != nil {
+		return nil, err
+	}
+
+	progInfo, err := m.GetProgInfo()
+	if progInfo == nil {
+		return &EnvChanges{
+			Added: envs,
+		}, nil
+	}
+
+	if len(progInfo.Envs) == 0 {
+		return &EnvChanges{
+			Added: envs,
+		}, nil
+	}
+
+	ec := EnvChanges{
+		Added: make(map[string]string),
+	}
+
+	// mark all stored envs as removed
+	// mark them as unremoved later if seen them in the deps file
+	removedEnvs := make(map[string]struct{}, len(progInfo.Envs))
+	for _, e := range progInfo.Envs {
+		removedEnvs[e] = struct{}{}
+	}
+
+	for k, v := range envs {
+		if _, ok := removedEnvs[k]; ok {
+			// remove from deleted if seen
+			delete(removedEnvs, k)
+		} else {
+			// add as new env if not seen
+			ec.Added[k] = v
+		}
+	}
+
+	for e := range removedEnvs {
+		ec.Removed = append(ec.Removed, e)
+	}
+
+	if len(ec.Added) == 0 && len(ec.Removed) == 0 {
+		return nil, nil
+	}
+
+	return &ec, nil
+}
+
+// WriteProgramFiles writes program files to target dir
+func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string) error {
+	writeDir := m.rootDir
+	// use root dir as dir to store if targetDir is not provided
+	if targetDir != nil && *targetDir != writeDir {
+		writeDir = filepath.Join(m.rootDir, *targetDir)
+	}
+
+	// need to create dirs first before writing the files
+	for f := range progFiles {
+		dir, _ := filepath.Split(f)
+		if dir != "" {
+			dir = filepath.Join(writeDir, dir)
+			err := os.MkdirAll(dir, dirPermMode)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// write the files
+	for file, content := range progFiles {
+		file = filepath.Join(writeDir, file)
+		err := ioutil.WriteFile(file, []byte(content), filePermMode)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

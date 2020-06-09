@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,11 +13,19 @@ import (
 )
 
 const (
-	rootEndpoint = "https://web.deta.sh"
+	rootEndpoint = "https://v1.deta.sh"
+	patcherPath  = "patcher"
+	viewerPath   = "viewer"
+	pigeonPath   = "pigeon"
 )
 
-// set with Makefile during compilation
-var version string
+var (
+	// set with Makefile during compilation
+	version string
+
+	// ErrUnauthorized unauthorized error
+	ErrUnauthorized = errors.New("Unauthorized")
+)
 
 // DetaClient client that talks with the deta api
 type DetaClient struct {
@@ -28,7 +37,12 @@ type DetaClient struct {
 func NewDetaClient() *DetaClient {
 	var e string
 	if version == "DEV" {
+		fmt.Println("Development mode")
 		e = os.Getenv("DEV_ENDPOINT")
+		if e == "" {
+			os.Stderr.WriteString("Env DEV_ENDPOINT not set\n")
+			os.Exit(1)
+		}
 	} else {
 		e = rootEndpoint
 	}
@@ -38,8 +52,13 @@ func NewDetaClient() *DetaClient {
 	}
 }
 
-// RequestInput input to Request function
-type RequestInput struct {
+type errorResp struct {
+	Errors  []string `json:"errors,omitempty"`
+	Message string   `json:"message,omitempty"`
+}
+
+// requestInput input to Request function
+type requestInput struct {
 	Path        string
 	Method      string
 	Headers     map[string]string
@@ -49,15 +68,16 @@ type RequestInput struct {
 	ContentType string
 }
 
-// RequestOutput ouput of Request function
-type RequestOutput struct {
+// requestOutput ouput of Request function
+type requestOutput struct {
 	Status int
+	Body   []byte
 	Header http.Header
-	Body   interface{}
+	Error  *errorResp
 }
 
 // Request send an http request to the deta api
-func (d *DetaClient) Request(i *RequestInput) (*RequestOutput, error) {
+func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 	marshalled, err := json.Marshal(&i.Body)
 	if err != nil {
 		return nil, err
@@ -73,18 +93,22 @@ func (d *DetaClient) Request(i *RequestInput) (*RequestOutput, error) {
 		authManager := auth.NewManager()
 		token, err := authManager.GetAccessToken()
 		if err != nil {
-			return nil, err
+			if os.IsNotExist(err) {
+				return nil, fmt.Errorf("requires login")
+			}
 		}
-		req.Header.Set("Authoriazation", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	}
+
+	if i.Body != nil {
+		// default set to application/json
+		req.Header.Set("Content-type", "application/json")
+		if i.ContentType != "" {
+			req.Header.Set("Content-type", i.ContentType)
+		}
 	}
 
 	// headers
-	if i.ContentType != "" {
-		req.Header.Set("Content-type", i.ContentType)
-	} else {
-		// default set to application/json
-		req.Header.Set("Content-type", "application/json")
-	}
 	for k, v := range i.Headers {
 		req.Header.Set(k, v)
 	}
@@ -101,21 +125,29 @@ func (d *DetaClient) Request(i *RequestInput) (*RequestOutput, error) {
 	}
 	defer res.Body.Close()
 
-	var responseBody interface{}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(b, &responseBody)
+	o := &requestOutput{
+		Status: res.StatusCode,
+		Header: res.Header,
+	}
+
+	if res.StatusCode >= 200 && res.StatusCode <= 299 && res.StatusCode != 204 {
+		o.Body = b
+		return o, nil
+	}
+
+	var er errorResp
+	err = json.Unmarshal(b, &er)
 	if err != nil {
 		return nil, err
 	}
-
-	o := &RequestOutput{
-		Status: res.StatusCode,
-		Header: res.Header,
-		Body:   responseBody,
+	o.Error = &er
+	if res.StatusCode == 401 {
+		return o, ErrUnauthorized
 	}
 	return o, nil
 }
