@@ -150,7 +150,7 @@ func (m *Manager) Login() error {
 }
 
 func (m *Manager) openLoginPage() error {
-	loginURL = fmt.Sprintf("%s?port=%d", loginURL, localServerPort)
+	loginURL = fmt.Sprintf("%s/%d", loginURL, localServerPort)
 	switch runtime.GOOS {
 	case "linux":
 		return exec.Command("xdg-open", loginURL).Start()
