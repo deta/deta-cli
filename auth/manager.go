@@ -3,6 +3,7 @@ package auth
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,7 +14,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 )
 
 const (
@@ -34,7 +34,6 @@ type cognitoToken struct {
 	AccessToken  string `json:"access_token"`
 	IDToken      string `json:"id_token"`
 	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int64  `json:"expires_in"` // in seconds
 }
 
 // Manager manages aws cognito authentication
@@ -94,17 +93,42 @@ func (m *Manager) storeTokens(tokens *cognitoToken) error {
 	if err != nil {
 		return err
 	}
-	_, err = f.WriteString(fmt.Sprintf("%s\n", m.expiresInToTimestamp(tokens.ExpiresIn)))
+
+	expiresIn, err := m.expiresInFromToken(tokens.AccessToken)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.WriteString(fmt.Sprintf("%s\n", expiresIn))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// covert expires in to timestamp(RFC3339) calculated from current time
-func (m *Manager) expiresInToTimestamp(expiresIn int64) string {
-	timestamp := time.Now().Add(time.Duration(expiresIn) * time.Second)
-	return timestamp.Format(time.RFC3339)
+// pulls token expire time from token, time is in seconds since Unix epoch
+func (m *Manager) expiresInFromToken(accessToken string) (string, error) {
+	tokenParts := strings.Split(accessToken, ".")
+	if len(tokenParts) != 3 {
+		return "", fmt.Errorf("access token is of invalid format")
+	}
+
+	var decoded []byte
+	_, err := base64.StdEncoding.Decode(decoded, []byte(tokenParts[1]))
+	if err != nil {
+		return "", err
+	}
+
+	var payload map[string]string
+	err = json.Unmarshal(decoded, &payload)
+	if err != nil {
+		return "", err
+	}
+	expiresIn, ok := payload["exp"]
+	if !ok {
+		return "", fmt.Errorf("No expire time found in access token")
+	}
+	return expiresIn, nil
 }
 
 // GetAccessToken retrieves the access token from storage
