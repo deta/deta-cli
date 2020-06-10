@@ -63,6 +63,7 @@ func (c *DetaClient) Deploy(r *DeployRequest) (*DeployResponse, error) {
 // NewProgramRequest request to create a new program
 type NewProgramRequest struct {
 	Space   int64   `json:"spaceID"`
+	Project string  `json:"project"`
 	Group   string  `json:"group"`
 	Name    string  `json:"name"`
 	Runtime string  `json:"runtime"`

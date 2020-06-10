@@ -17,6 +17,7 @@ var (
 	nodeFlag    bool
 	pythonFlag  bool
 	newProgName string
+	projectName string
 
 	newCmd = &cobra.Command{
 		Use:   "new [flags] [path]",
@@ -31,6 +32,7 @@ func init() {
 	newCmd.Flags().BoolVar(&nodeFlag, "node", false, "create a program with node runtime")
 	newCmd.Flags().BoolVar(&pythonFlag, "python", false, "create a program with python runtime")
 	newCmd.Flags().StringVarP(&newProgName, "name", "n", "", "name of the new program")
+	newCmd.Flags().StringVarP(&projectName, "project", "p", "", "project to create the program under")
 
 	rootCmd.AddCommand(newCmd)
 }
@@ -111,8 +113,14 @@ func new(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("login required, log in with 'deta login'")
 	}
 
+	project := userInfo.DefaultProject
+	if projectName != "" {
+		project = projectName
+	}
+
 	req := &api.NewProgramRequest{
 		Space:   userInfo.DefaultSpace,
+		Project: project,
 		Name:    newProgName,
 		Runtime: progRuntime,
 	}
