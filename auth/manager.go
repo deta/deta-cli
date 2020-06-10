@@ -14,6 +14,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws/credentials"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	cidp "github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 )
 
 const (
@@ -23,7 +30,9 @@ const (
 
 var (
 	// set with Makefile during compilation
-	loginURL string
+	loginURL          string
+	cognitoClientID   string
+	cognitoPoolRegion string
 
 	// port to start local server for login
 	localServerPort int
@@ -47,6 +56,7 @@ type Manager struct {
 // NewManager returns a new auth Manager
 func NewManager() *Manager {
 	srv := &http.Server{}
+
 	return &Manager{
 		tokenChan: make(chan *CognitoToken, 1),
 		errChan:   make(chan error, 1),
@@ -116,8 +126,14 @@ func (m *Manager) expiresFromToken(accessToken string) (int64, error) {
 	return e, nil
 }
 
-// GetTokens retrieves the tokens from storage
-func (m *Manager) GetTokens() (*CognitoToken, error) {
+// checks if token is already expired
+func (m *Manager) isTokenExpired(token *CognitoToken) bool {
+	unixTime := time.Now().Unix()
+	return token.Expires < unixTime
+}
+
+// getTokens retrieves the tokens from storage
+func (m *Manager) getTokens() (*CognitoToken, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, nil
@@ -142,6 +158,68 @@ func (m *Manager) GetTokens() (*CognitoToken, error) {
 	return &tokens, nil
 }
 
+// refreshes the tokens
+func (m *Manager) refreshTokens() (*CognitoToken, error) {
+	tokens, err := m.getTokens()
+	if err != nil {
+		return nil, err
+	}
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String(cognitoPoolRegion),
+		Credentials: credentials.AnonymousCredentials,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	idp := cidp.New(sess)
+	o, err := idp.InitiateAuth(&cidp.InitiateAuthInput{
+		AuthFlow: aws.String("REFRESH_TOKEN"),
+		AuthParameters: map[string]*string{
+			"REFRESH_TOKEN": aws.String(tokens.RefreshToken),
+		},
+		ClientId: aws.String(cognitoClientID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	authResult := o.AuthenticationResult
+	if authResult == nil {
+		return nil, fmt.Errorf("failed to refresh auth tokens")
+	}
+
+	newTokens := &CognitoToken{
+		AccessToken:  *authResult.AccessToken,
+		IDToken:      *authResult.IdToken,
+		RefreshToken: *authResult.RefreshToken,
+	}
+	err = m.storeTokens(newTokens)
+	if err != nil {
+		return nil, err
+	}
+	return newTokens, nil
+}
+
+// GetTokens gets tokens from local storage if not expired
+// else refreshes the tokens first and then provides the new tokens
+func (m *Manager) GetTokens() (*CognitoToken, error) {
+	tokens, err := m.getTokens()
+	if err != nil {
+		return nil, err
+	}
+
+	if !m.isTokenExpired(tokens) {
+		return tokens, nil
+	}
+
+	newTokens, err := m.refreshTokens()
+	if err != nil {
+		return nil, err
+	}
+	return newTokens, err
+}
+
 // Login logs in to the user pool and stores the tokens
 func (m *Manager) Login() error {
 	err := m.useFreePort()
@@ -153,7 +231,7 @@ func (m *Manager) Login() error {
 	if err != nil {
 		return err
 	}
-	err = m.retrieveTokens()
+	err = m.retrieveTokensFromServer()
 	if err != nil {
 		return err
 	}
@@ -248,7 +326,7 @@ func (m *Manager) shutdownServer() {
 
 // starts local server to retrieve tokens from login page
 // shuts down the server on receiving the tokens
-func (m *Manager) retrieveTokens() error {
+func (m *Manager) retrieveTokensFromServer() error {
 	go m.startLocalServer()
 	select {
 	case err := <-m.errChan:
