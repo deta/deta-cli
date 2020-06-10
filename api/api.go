@@ -414,3 +414,179 @@ func (c *DetaClient) UpdateProgDeps(req *UpdateProgDepsRequest) (*UpdateProgDeps
 	}
 	return &resp, nil
 }
+
+// UpdateAuthRequest request to update http auth for a program
+type UpdateAuthRequest struct {
+	ProgramID string `json:"-"`
+	AuthValue bool   `json:"http_auth"`
+}
+
+// UpdateAuth update http auth (enable or disable) for a program
+func (c *DetaClient) UpdateAuth(req *UpdateAuthRequest) error {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/programs/%s/api", req.ProgramID),
+		Method:    "PATCH",
+		Body:      req,
+		NeedsAuth: true,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return fmt.Errorf("failed to update program auth: %v", msg)
+	}
+	return nil
+}
+
+// CreateAPIKeyRequest request to create an api key for a program
+type CreateAPIKeyRequest struct {
+	ProgramID   string `json:"program_id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+}
+
+// CreateAPIKeyResponse response to create api key request
+type CreateAPIKeyResponse struct {
+	ProgramID   string `json:"program_id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitmepty"`
+	Prefix      string `json:"prefix"`
+	APIKey      string `json:"api_key"`
+	Created     string `json:"created"`
+	Active      bool   `json:"active"`
+}
+
+// CreateAPIKey create an api key for your program
+func (c *DetaClient) CreateAPIKey(req *CreateAPIKeyRequest) (*CreateAPIKeyResponse, error) {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/api_keys/"),
+		Method:    "POST",
+		Body:      req,
+		NeedsAuth: true,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return nil, err
+	}
+
+	if o.Status != 201 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[1]
+		}
+		return nil, fmt.Errorf("failed to create an api key: %v", msg)
+	}
+
+	var resp CreateAPIKeyResponse
+	err = json.Unmarshal(o.Body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// DeleteAPIKeyRequest request to delete an api key
+type DeleteAPIKeyRequest struct {
+	ProgramID string
+	Name      string
+}
+
+// DeleteAPIKey delete an api key
+func (c *DetaClient) DeleteAPIKey(req *DeleteAPIKeyRequest) error {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/api_keys/%s/%s", req.ProgramID, req.Name),
+		Method:    "DELETE",
+		NeedsAuth: true,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return fmt.Errorf("failed to delete api key: %v", msg)
+	}
+	return nil
+}
+
+// UpdateVisorModeRequest request to update visor mode
+type UpdateVisorModeRequest struct {
+	ProgramID string `json:"-"`
+	Mode      string `json:"log_level"`
+}
+
+// UpdateVisorMode updates the visor mode for a program
+func (c *DetaClient) UpdateVisorMode(req *UpdateVisorModeRequest) error {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/programs/%s/log-level", req.ProgramID),
+		Body:      req,
+		NeedsAuth: true,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return err
+	}
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return fmt.Errorf("failed to update visor mode: %v", msg)
+	}
+	return nil
+}
+
+// GetProjectsRequest request to get your projects
+type GetProjectsRequest struct {
+	SpaceID int64
+}
+
+// GetProjectsResponse response to get projects request
+type GetProjectsResponse struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Created     string `json:"created"`
+}
+
+// GetProjects gets projects
+func (c *DetaClient) GetProjects(req *GetProjectsRequest) ([]GetProjectsResponse, error) {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/spaces/%d/projects", req.SpaceID),
+		Method:    "GET",
+		NeedsAuth: true,
+	}
+	o, err := c.request(i)
+	if err != nil {
+		return nil, err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[1]
+		}
+		return nil, fmt.Errorf("failed to get projects: %v", msg)
+	}
+
+	var resp []GetProjectsResponse
+	err = json.Unmarshal(o.Body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

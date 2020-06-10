@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"io"
 	"io/ioutil"
 	"os"
@@ -19,6 +20,9 @@ const (
 	Python = "python"
 	// Node runtime
 	Node = "node"
+
+	// DefaultProject default project slug
+	DefaultProject = "default"
 
 	// drwxrw----
 	dirPermMode = 0760
