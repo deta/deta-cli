@@ -34,7 +34,7 @@ type CognitoToken struct {
 	AccessToken  string `json:"access_token"`
 	IDToken      string `json:"id_token"`
 	RefreshToken string `json:"refresh_token"`
-	Expires      string `json:"expires"`
+	Expires      int64  `json:"expires"`
 }
 
 // Manager manages aws cognito authentication
@@ -56,7 +56,7 @@ func NewManager() *Manager {
 
 // stores tokens in file ~/.deta/tokens
 func (m *Manager) storeTokens(tokens *CognitoToken) error {
-	expiresIn, err := m.expiresInFromToken(tokens.AccessToken)
+	expiresIn, err := m.expiresFromToken(tokens.AccessToken)
 	if err != nil {
 		return err
 	}
@@ -89,31 +89,31 @@ func (m *Manager) storeTokens(tokens *CognitoToken) error {
 }
 
 type tokenPayload struct {
-	ExpiresIn int64 `json:"exp"`
+	Expires int64 `json:"exp"`
 }
 
 // pulls token expire time from token, time is in seconds since Unix epoch
-func (m *Manager) expiresInFromToken(accessToken string) (string, error) {
+func (m *Manager) expiresFromToken(accessToken string) (int64, error) {
 	tokenParts := strings.Split(accessToken, ".")
 	if len(tokenParts) != 3 {
-		return "", fmt.Errorf("access token is of invalid format")
+		return 0, fmt.Errorf("access token is of invalid format")
 	}
 
 	decoded, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
 	var payload tokenPayload
 	err = json.Unmarshal(decoded, &payload)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	e := payload.ExpiresIn
+	e := payload.Expires
 	if e == 0 {
-		return "", fmt.Errorf("No expire time found in access token")
+		return 0, fmt.Errorf("No expire time found in access token")
 	}
-	return fmt.Sprintf("%d", e), nil
+	return e, nil
 }
 
 // GetTokens retrieves the tokens from storage
