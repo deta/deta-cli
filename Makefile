@@ -6,6 +6,8 @@ LDFLAGS := -X github.com/deta/deta-cli/cmd.detaVersion=$(DETA_VERSION) $(LDFLAGS
 LDFLAGS := -X github.com/deta/deta-cli/cmd.goVersion=$(GO_VERSION) $(LDFLAGS)
 LDFLAGS := -X github.com/deta/deta-cli/cmd.platform=$(PLATFORM) $(LDFLAGS)
 LDFLAGS := -X github.com/deta/deta-cli/auth.loginURL=$(LOGIN_URL) $(LDFLAGS)
+LDFLAGS := -X github.com/deta/deta-cli/auth.cognitioClientID=$(COGNITO_CLIENT_ID) $(LDFLAGS)
+LDFLAGS := -X github.com/deta/deta-cli/auth.cognitioRegion=$(COGNITO_REGION) $(LDFLAGS)
 LDFLAGS := -X github.com/deta/deta-cli/api.version=$(DETA_VERSION) $(LDFLAGS)
 
 .PHONY: build clean

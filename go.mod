@@ -3,7 +3,7 @@ module github.com/deta/deta-cli
 go 1.13
 
 require (
-	github.com/aws/aws-sdk-go v1.31.7
+	github.com/aws/aws-sdk-go v1.31.14
 	github.com/deta/deta-cli/auth v0.0.0-00010101000000-000000000000
 	github.com/deta/deta-cli/cmd v0.0.0-00010101000000-000000000000
 	github.com/deta/deta-cli/runtime v0.0.0-00010101000000-000000000000
