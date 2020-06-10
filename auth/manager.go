@@ -30,9 +30,9 @@ const (
 
 var (
 	// set with Makefile during compilation
-	loginURL          string
-	cognitoClientID   string
-	cognitoPoolRegion string
+	loginURL        string
+	cognitoClientID string
+	cognitoRegion   string
 
 	// port to start local server for login
 	localServerPort int
@@ -165,7 +165,7 @@ func (m *Manager) refreshTokens() (*CognitoToken, error) {
 		return nil, err
 	}
 	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(cognitoPoolRegion),
+		Region:      aws.String(cognitoRegion),
 		Credentials: credentials.AnonymousCredentials,
 	})
 	if err != nil {
