@@ -91,13 +91,13 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 	// auth
 	if i.NeedsAuth {
 		authManager := auth.NewManager()
-		token, err := authManager.GetAccessToken()
+		tokens, err := authManager.GetTokens()
 		if err != nil {
 			if os.IsNotExist(err) {
 				return nil, fmt.Errorf("requires login")
 			}
 		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokens.AccessToken))
 	}
 
 	if i.Body != nil {

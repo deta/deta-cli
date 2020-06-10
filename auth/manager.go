@@ -1,19 +1,19 @@
 package auth
 
 import (
-	"bufio"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 )
 
 const (
@@ -29,18 +29,18 @@ var (
 	localServerPort int
 )
 
-// aws congito tokens
-type cognitoToken struct {
+// CognitoToken aws congito tokens
+type CognitoToken struct {
 	AccessToken  string `json:"access_token"`
 	IDToken      string `json:"id_token"`
 	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int64  `json:"expires_in"` // in seconds
+	Expires      string `json:"expires"`
 }
 
 // Manager manages aws cognito authentication
 type Manager struct {
 	srv       *http.Server
-	tokenChan chan *cognitoToken
+	tokenChan chan *CognitoToken
 	errChan   chan error
 }
 
@@ -48,14 +48,25 @@ type Manager struct {
 func NewManager() *Manager {
 	srv := &http.Server{}
 	return &Manager{
-		tokenChan: make(chan *cognitoToken, 1),
+		tokenChan: make(chan *CognitoToken, 1),
 		errChan:   make(chan error, 1),
 		srv:       srv,
 	}
 }
 
 // stores tokens in file ~/.deta/tokens
-func (m *Manager) storeTokens(tokens *cognitoToken) error {
+func (m *Manager) storeTokens(tokens *CognitoToken) error {
+	expiresIn, err := m.expiresInFromToken(tokens.AccessToken)
+	if err != nil {
+		return err
+	}
+	tokens.Expires = expiresIn
+
+	marshalled, err := json.Marshal(tokens)
+	if err != nil {
+		return err
+	}
+
 	// TODO: windows compatibility
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -69,66 +80,66 @@ func (m *Manager) storeTokens(tokens *cognitoToken) error {
 	}
 
 	tokensFilePath := filepath.Join(home, authTokenPath)
-	f, err := os.OpenFile(tokensFilePath, os.O_CREATE|os.O_WRONLY, 0660)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
 
-	/*
-		Tokens file is written as:
-		access_token
-		id_token
-		refresh_token
-		expiration_time
-	*/
-	_, err = f.WriteString(fmt.Sprintf("%s\n", tokens.AccessToken))
-	if err != nil {
-		return err
-	}
-	_, err = f.WriteString(fmt.Sprintf("%s\n", tokens.IDToken))
-	if err != nil {
-		return err
-	}
-	_, err = f.WriteString(fmt.Sprintf("%s\n", tokens.RefreshToken))
-	if err != nil {
-		return err
-	}
-	_, err = f.WriteString(fmt.Sprintf("%s\n", m.expiresInToTimestamp(tokens.ExpiresIn)))
+	err = ioutil.WriteFile(tokensFilePath, marshalled, 0660)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// covert expires in to timestamp(RFC3339) calculated from current time
-func (m *Manager) expiresInToTimestamp(expiresIn int64) string {
-	timestamp := time.Now().Add(time.Duration(expiresIn) * time.Second)
-	return timestamp.Format(time.RFC3339)
+type tokenPayload struct {
+	ExpiresIn int64 `json:"exp"`
 }
 
-// GetAccessToken retrieves the access token from storage
-func (m *Manager) GetAccessToken() (string, error) {
+// pulls token expire time from token, time is in seconds since Unix epoch
+func (m *Manager) expiresInFromToken(accessToken string) (string, error) {
+	tokenParts := strings.Split(accessToken, ".")
+	if len(tokenParts) != 3 {
+		return "", fmt.Errorf("access token is of invalid format")
+	}
+
+	decoded, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
+	if err != nil {
+		return "", err
+	}
+
+	var payload tokenPayload
+	err = json.Unmarshal(decoded, &payload)
+	if err != nil {
+		return "", err
+	}
+	e := payload.ExpiresIn
+	if e == 0 {
+		return "", fmt.Errorf("No expire time found in access token")
+	}
+	return fmt.Sprintf("%d", e), nil
+}
+
+// GetTokens retrieves the tokens from storage
+func (m *Manager) GetTokens() (*CognitoToken, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", nil
+		return nil, nil
 	}
 
 	tokensFilePath := filepath.Join(home, authTokenPath)
 	f, err := os.Open(tokensFilePath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer f.Close()
 
-	reader := bufio.NewReader(f)
-	accessToken, err := reader.ReadString('\n')
+	contents, err := ioutil.ReadAll(f)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	accessToken = strings.TrimSuffix(accessToken, "\n")
-	return accessToken, nil
+	var tokens CognitoToken
+	err = json.Unmarshal(contents, &tokens)
+	if err != nil {
+		return nil, err
+	}
+	return &tokens, nil
 }
 
 // Login logs in to the user pool and stores the tokens
@@ -171,7 +182,22 @@ func (m *Manager) tokenHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Internal server error"))
 	}
 
-	var tokens cognitoToken
+	u, err := url.Parse(loginURL)
+	if err != nil {
+		serverError(w, err)
+	}
+
+	// CORS
+	host := fmt.Sprintf("%s://%s", u.Scheme, u.Host)
+	w.Header().Set("Access-Control-Allow-Origin", host)
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allowe-Headers", "Content-Type")
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	var tokens CognitoToken
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		serverError(w, err)
