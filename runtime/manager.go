@@ -606,6 +606,10 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 	// use root dir as dir to store if targetDir is not provided
 	if targetDir != nil && *targetDir != writeDir {
 		writeDir = filepath.Join(m.rootDir, *targetDir)
+		err := os.MkdirAll(writeDir, dirPermMode)
+		if err != nil {
+			return err
+		}
 	}
 
 	// need to create dirs first before writing the files
@@ -625,6 +629,7 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 		file = filepath.Join(writeDir, file)
 		err := ioutil.WriteFile(file, []byte(content), filePermMode)
 		if err != nil {
+			fmt.Println("Error: ", err)
 			return err
 		}
 	}

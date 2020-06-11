@@ -48,10 +48,8 @@ func pull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	pullPath := fmt.Sprintf("%s_latest", progInfo.Name)
+	pullPath := fmt.Sprintf("%s-latest", progInfo.Name)
 	if len(args) != 0 {
-		pullPath = filepath.Join(wd, pullPath)
-	} else {
 		pullPath = filepath.Join(args[0], pullPath)
 	}
 
