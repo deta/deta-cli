@@ -455,13 +455,11 @@ type CreateAPIKeyRequest struct {
 
 // CreateAPIKeyResponse response to create api key request
 type CreateAPIKeyResponse struct {
-	ProgramID   string `json:"program_id"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitmepty"`
 	Prefix      string `json:"prefix"`
 	APIKey      string `json:"api_key"`
 	Created     string `json:"created"`
-	Active      bool   `json:"active"`
 }
 
 // CreateAPIKey create an api key for your program
@@ -481,7 +479,7 @@ func (c *DetaClient) CreateAPIKey(req *CreateAPIKeyRequest) (*CreateAPIKeyRespon
 	if o.Status != 201 {
 		msg := o.Error.Message
 		if msg == "" {
-			msg = o.Error.Errors[1]
+			msg = o.Error.Errors[0]
 		}
 		return nil, fmt.Errorf("failed to create an api key: %v", msg)
 	}
@@ -535,6 +533,7 @@ func (c *DetaClient) UpdateVisorMode(req *UpdateVisorModeRequest) error {
 		Path:      fmt.Sprintf("/programs/%s/log-level", req.ProgramID),
 		Body:      req,
 		NeedsAuth: true,
+		Method:    "PATCH",
 	}
 
 	o, err := c.request(i)
@@ -579,7 +578,7 @@ func (c *DetaClient) GetProjects(req *GetProjectsRequest) ([]GetProjectsResponse
 	if o.Status != 200 {
 		msg := o.Error.Message
 		if msg == "" {
-			msg = o.Error.Errors[1]
+			msg = o.Error.Errors[0]
 		}
 		return nil, fmt.Errorf("failed to get projects: %v", msg)
 	}

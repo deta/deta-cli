@@ -25,7 +25,7 @@ var (
 )
 
 func init() {
-	createAPIKeyCmd.Flags().StringVarP(&outfile, "outfile", "o", "", "file to save the api-key and details in")
+	createAPIKeyCmd.Flags().StringVarP(&outfile, "outfile", "o", "", "file to save the api-key")
 	createAPIKeyCmd.Flags().StringVarP(&apiKeyName, "name", "n", "", "api-key name")
 	createAPIKeyCmd.Flags().StringVarP(&apiKeyDesc, "desc", "d", "", "api-key description")
 	createAPIKeyCmd.MarkFlagRequired("name")
@@ -69,7 +69,7 @@ func createAPIKey(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Println("DISCLAIMER: THE FOLLOWING API-KEY WILL ONLY BE SHOWN ONCE.")
+	fmt.Println("THE FOLLOWING API-KEY WILL ONLY BE SHOWN ONCE.")
 	if outfile == "" {
 		fmt.Println("Please, copy it and keep it in a safe place.")
 	} else {
@@ -82,7 +82,7 @@ func createAPIKey(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println(prettyOutput)
 
-	if outfile == "" {
+	if outfile != "" {
 		outfilepath := filepath.Join(wd, outfile)
 		err := ioutil.WriteFile(outfilepath, []byte(prettyOutput), 0660)
 		if err != nil {

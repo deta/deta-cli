@@ -477,27 +477,21 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 func (m *Manager) GetDepChanges() (*DepChanges, error) {
 	progInfo, err := m.GetProgInfo()
 	if progInfo == nil {
-		runtime, err := m.GetRuntime()
-		if err != nil {
-			return nil, err
-		}
-		deps, err := m.readDeps(runtime)
-		if err != nil {
-			return nil, err
-		}
-		return &DepChanges{
-			Added: deps,
-		}, nil
+		return nil, fmt.Errorf("no program information found")
 	}
 
+	if progInfo.Runtime == "" {
+		progInfo.Runtime, err = m.GetRuntime()
+		if err != nil {
+			return nil, err
+		}
+	}
 	deps, err := m.readDeps(progInfo.Runtime)
-	if err != nil {
-		return nil, err
-	}
 
+	// no previous deps so return all new local deps as added
 	if len(progInfo.Deps) == 0 {
-		if progInfo.Runtime == "" {
-			progInfo.Runtime, err = m.GetRuntime()
+		if len(deps) == 0 {
+			return nil, nil
 		}
 		return &DepChanges{
 			Added: deps,

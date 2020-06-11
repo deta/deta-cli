@@ -22,6 +22,8 @@ func init() {
 	deleteAPIKeyCmd.Flags().StringVarP(&apiKeyName, "name", "n", "", "api-key name")
 	deleteAPIKeyCmd.Flags().StringVarP(&apiKeyDesc, "desc", "d", "", "api-key description")
 	deleteAPIKeyCmd.MarkFlagRequired("name")
+
+	authCmd.AddCommand(deleteAPIKeyCmd)
 }
 
 func deleteAPIKey(cmd *cobra.Command, args []string) error {

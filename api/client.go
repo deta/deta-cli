@@ -93,9 +93,10 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 		authManager := auth.NewManager()
 		tokens, err := authManager.GetTokens()
 		if err != nil {
-			if os.IsNotExist(err) {
+			if os.IsNotExist(err) || errors.Is(err, auth.ErrRefreshTokenInvalid) {
 				return nil, fmt.Errorf("requires login")
 			}
+			return nil, fmt.Errorf("failed to get auth tokens")
 		}
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokens.AccessToken))
 	}

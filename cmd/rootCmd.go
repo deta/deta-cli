@@ -12,9 +12,9 @@ import (
 var (
 	rootCmd = &cobra.Command{
 		Use:   "deta",
-		Short: "Deta cli managing deta functions",
-		Long: `Deta command line interface for managing deta functions 
-and services. Complete documentation available at https://docs.deta.sh`,
+		Short: "Deta CLI for mananging deta micros",
+		Long: `Deta command line interface for managing deta micros 
+Complete documentation available at https://docs.deta.sh`,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Usage()
 		},

@@ -12,9 +12,9 @@ var (
 )
 
 func init() {
-	visorCmd.AddCommand(visorEnableCmd)
+	visorCmd.AddCommand(visorDisableCmd)
 }
 
 func disableVisor(cmd *cobra.Command, args []string) error {
-	return updateVisor("debug", args)
+	return updateVisor("off", args)
 }

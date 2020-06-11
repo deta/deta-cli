@@ -10,7 +10,7 @@ import (
 var (
 	loginCmd = &cobra.Command{
 		Use:   "login",
-		Short: "login to deta",
+		Short: "Login to deta",
 		RunE:  login,
 	}
 )

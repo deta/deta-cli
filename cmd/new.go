@@ -98,7 +98,7 @@ func new(cmd *cobra.Command, args []string) error {
 		} else if pythonFlag {
 			progRuntime = runtime.Python
 		} else {
-			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new -node' or 'deta new -python\n'")
+			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python\n'")
 			return nil
 		}
 	}

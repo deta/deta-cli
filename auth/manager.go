@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -16,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -36,6 +38,9 @@ var (
 
 	// port to start local server for login
 	localServerPort int
+
+	// ErrRefreshTokenInvalid refresh token invalid
+	ErrRefreshTokenInvalid = errors.New("refresh token is invalid")
 )
 
 // CognitoToken aws congito tokens
@@ -121,7 +126,7 @@ func (m *Manager) expiresFromToken(accessToken string) (int64, error) {
 	}
 	e := payload.Expires
 	if e == 0 {
-		return 0, fmt.Errorf("No expire time found in access token")
+		return 0, fmt.Errorf("no expire time found in access token")
 	}
 	return e, nil
 }
@@ -164,6 +169,7 @@ func (m *Manager) refreshTokens() (*CognitoToken, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(cognitoRegion),
 		Credentials: credentials.AnonymousCredentials,
@@ -174,13 +180,19 @@ func (m *Manager) refreshTokens() (*CognitoToken, error) {
 
 	idp := cidp.New(sess)
 	o, err := idp.InitiateAuth(&cidp.InitiateAuthInput{
-		AuthFlow: aws.String("REFRESH_TOKEN"),
+		AuthFlow: aws.String("REFRESH_TOKEN_AUTH"),
 		AuthParameters: map[string]*string{
 			"REFRESH_TOKEN": aws.String(tokens.RefreshToken),
 		},
 		ClientId: aws.String(cognitoClientID),
 	})
 	if err != nil {
+		var aerr awserr.Error
+		if errors.As(err, &aerr) {
+			if aerr.Code() == cidp.ErrCodeNotAuthorizedException {
+				return nil, ErrRefreshTokenInvalid
+			}
+		}
 		return nil, err
 	}
 
@@ -192,7 +204,7 @@ func (m *Manager) refreshTokens() (*CognitoToken, error) {
 	newTokens := &CognitoToken{
 		AccessToken:  *authResult.AccessToken,
 		IDToken:      *authResult.IdToken,
-		RefreshToken: *authResult.RefreshToken,
+		RefreshToken: tokens.RefreshToken,
 	}
 	err = m.storeTokens(newTokens)
 	if err != nil {

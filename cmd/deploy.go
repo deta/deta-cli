@@ -11,7 +11,7 @@ import (
 var (
 	deployCmd = &cobra.Command{
 		Use:   "deploy",
-		Short: "deploy a program",
+		Short: "Deploy a program",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  deploy,
 	}
