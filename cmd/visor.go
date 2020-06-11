@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	authCmd = &cobra.Command{
-		Use:   "auth [command]",
-		Short: "Change auth settings for a deta program",
+	visorCmd = &cobra.Command{
+		Use:   "visor [command]",
+		Short: "Change visor settings for a deta program",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Usage()
@@ -21,10 +21,10 @@ var (
 )
 
 func init() {
-	rootCmd.AddCommand(authCmd)
+	rootCmd.AddCommand(visorCmd)
 }
 
-func updateAuth(value bool, args []string) error {
+func updateVisor(mode string, args []string) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -51,16 +51,16 @@ func updateAuth(value bool, args []string) error {
 		return err
 	}
 
-	err = client.UpdateAuth(&api.UpdateAuthRequest{
+	err = client.UpdateVisorMode(&api.UpdateVisorModeRequest{
 		ProgramID: progInfo.ID,
-		AuthValue: value,
+		Mode:      mode,
 	})
 	if err != nil {
 		return err
 	}
-	msg := "Successfully enabled http auth"
-	if value {
-		msg = "Successfully disabled http auth"
+	msg := fmt.Sprintf("Successfully disabled visor mode")
+	if mode == "debug" {
+		msg = fmt.Sprintf("Successfully enabled visor mode")
 	}
 	fmt.Println(msg)
 	return nil
