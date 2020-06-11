@@ -552,7 +552,7 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 
 // GetEnvChanges gets changes in stored env keys and keys of the envFile
 func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
-	envs, err := m.readEnvs(envFile)
+	vars, err := m.readEnvs(envFile)
 	if err != nil {
 		return nil, err
 	}
@@ -560,18 +560,18 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 	progInfo, err := m.GetProgInfo()
 	if progInfo == nil {
 		return &EnvChanges{
-			Added: envs,
+			Vars: vars,
 		}, nil
 	}
 
 	if len(progInfo.Envs) == 0 {
 		return &EnvChanges{
-			Added: envs,
+			Vars: vars,
 		}, nil
 	}
 
 	ec := EnvChanges{
-		Added: make(map[string]string),
+		Vars: make(map[string]string),
 	}
 
 	// mark all stored envs as removed
@@ -581,21 +581,19 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 		removedEnvs[e] = struct{}{}
 	}
 
-	for k, v := range envs {
+	for k, v := range vars {
 		if _, ok := removedEnvs[k]; ok {
-			// remove from deleted if seen
+			// delete from removed if seen
 			delete(removedEnvs, k)
-		} else {
-			// add as new env if not seen
-			ec.Added[k] = v
 		}
+		ec.Vars[k] = v
 	}
 
 	for e := range removedEnvs {
 		ec.Removed = append(ec.Removed, e)
 	}
 
-	if len(ec.Added) == 0 && len(ec.Removed) == 0 {
+	if len(ec.Vars) == 0 && len(ec.Removed) == 0 {
 		return nil, nil
 	}
 
