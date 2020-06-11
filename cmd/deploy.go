@@ -100,6 +100,11 @@ func deploy(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("failed to add dependencies: %v", err)
 			}
 			fmt.Println(o.Output)
+
+			for _, a := range dc.Added {
+				progInfo.Deps = append(progInfo.Deps, a)
+			}
+			runtimeManager.StoreProgInfo(progInfo)
 		}
 		if len(dc.Removed) > 0 {
 			uninstallCmd := fmt.Sprintf("%s uninstall", command)
@@ -114,6 +119,10 @@ func deploy(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("failed to remove dependencies: %v", err)
 			}
 			fmt.Println(o.Output)
+			for _, d := range dc.Removed {
+				progInfo.Deps = removeFromSlice(progInfo.Deps, d)
+			}
+			runtimeManager.StoreProgInfo(progInfo)
 		}
 	}
 	return nil
