@@ -15,7 +15,7 @@ var (
 	envsPath string
 
 	updateCmd = &cobra.Command{
-		Use:   "update [--name name] [--envs env_file_path]",
+		Use:   "update",
 		Short: "Update a program",
 		RunE:  update,
 		Args:  cobra.MaximumNArgs(1),
@@ -29,6 +29,11 @@ func init() {
 }
 
 func update(cmd *cobra.Command, args []string) error {
+	if newProgName == "" && envsPath == "" {
+		cmd.Usage()
+		return nil
+	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -60,7 +65,11 @@ func update(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to update program: %v", err)
 		}
+		progInfo.Name = newProgName
+		runtimeManager.StoreProgInfo(progInfo)
+
 		msg := "Successfully updated program name."
+
 		if envsPath != "" {
 			msg = fmt.Sprintf("%s%s", msg, "Updating environment variables...")
 		}
@@ -73,8 +82,10 @@ func update(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to update env vars: %v", err)
 		}
 		vars := make(map[string]*string)
-		for a, v := range envChanges.Added {
-			vars[a] = &v
+		for k, v := range envChanges.Vars {
+			// cant' take the address of iterated value directly
+			value := v
+			vars[k] = &value
 		}
 		for _, d := range envChanges.Removed {
 			vars[d] = nil
@@ -89,7 +100,17 @@ func update(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to update program environment variables: %v", err)
 		}
-		fmt.Println("Successfully update program environment variables.")
+		for k := range envChanges.Vars {
+			if !inSlice(progInfo.Envs, k) {
+				progInfo.Envs = append(progInfo.Envs, k)
+			}
+		}
+		for _, d := range envChanges.Removed {
+			progInfo.Envs = removeFromSlice(progInfo.Envs, d)
+		}
+		runtimeManager.StoreProgInfo(progInfo)
+
+		fmt.Println("Successfully updated program environment variables.")
 	}
 	return nil
 }

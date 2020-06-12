@@ -17,6 +17,7 @@ var (
 	nodeFlag    bool
 	pythonFlag  bool
 	newProgName string
+	projectName string
 
 	newCmd = &cobra.Command{
 		Use:   "new [flags] [path]",
@@ -31,6 +32,7 @@ func init() {
 	newCmd.Flags().BoolVar(&nodeFlag, "node", false, "create a program with node runtime")
 	newCmd.Flags().BoolVar(&pythonFlag, "python", false, "create a program with python runtime")
 	newCmd.Flags().StringVarP(&newProgName, "name", "n", "", "name of the new program")
+	newCmd.Flags().StringVarP(&projectName, "project", "p", "", "project to create the program under")
 
 	rootCmd.AddCommand(newCmd)
 }
@@ -96,7 +98,7 @@ func new(cmd *cobra.Command, args []string) error {
 		} else if pythonFlag {
 			progRuntime = runtime.Python
 		} else {
-			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new -node' or 'deta new -python\n'")
+			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python'\n")
 			return nil
 		}
 	}
@@ -111,8 +113,14 @@ func new(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("login required, log in with 'deta login'")
 	}
 
+	project := userInfo.DefaultProject
+	if projectName != "" {
+		project = projectName
+	}
+
 	req := &api.NewProgramRequest{
 		Space:   userInfo.DefaultSpace,
+		Project: project,
 		Name:    newProgName,
 		Runtime: progRuntime,
 	}
@@ -141,6 +149,14 @@ func new(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	msg := "Successfully created a new program."
+	fmt.Println(msg)
+	output, err := progInfoToOutput(newProgInfo)
+	if err != nil {
+		os.Stderr.WriteString("program created but failed to show details\n")
+	}
+	fmt.Println(output)
 
 	// dowload template files if dir is empty
 	if isEmpty {
@@ -189,7 +205,6 @@ func new(cmd *cobra.Command, args []string) error {
 	}
 	runtimeManager.StoreState()
 
-	msg := "Successfully created new program."
 	if dc != nil {
 		msg = fmt.Sprintf("%s%s", msg, "Adding dependencies...")
 		command := runtime.DepCommands[res.Runtime]

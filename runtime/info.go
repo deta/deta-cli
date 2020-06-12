@@ -10,7 +10,7 @@ type DepChanges struct {
 
 // EnvChanges changes in env vars keys
 type EnvChanges struct {
-	Added   map[string]string
+	Vars    map[string]string
 	Removed []string
 }
 
@@ -27,6 +27,7 @@ type ProgInfo struct {
 	Deps    []string `json:"deps"`
 	Envs    []string `json:"envs"`
 	Public  bool     `json:"public"`
+	Visor   string   `json:"log_level"`
 }
 
 // unmarshals data into a ProgInfo

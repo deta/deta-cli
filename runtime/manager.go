@@ -5,20 +5,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"strings"
 )
 
 const (
 	// Python runtime
-	Python = "python"
+	Python = "python3.7"
 	// Node runtime
-	Node = "node"
+	Node = "nodejs12.x"
+
+	// DefaultProject default project slug
+	DefaultProject = "default"
 
 	// drwxrw----
 	dirPermMode = 0760
@@ -433,9 +436,17 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 	return sc, nil
 }
 
+type pkgJSON struct {
+	Deps map[string]string `json:"dependencies"`
+}
+
 // readDeps from the dependecy files based on runtime
 func (m *Manager) readDeps(runtime string) ([]string, error) {
-	contents, err := m.readFile(depFiles[runtime])
+	depFile, ok := depFiles[runtime]
+	if !ok {
+		return nil, fmt.Errorf("unsupported runtime %s", runtime)
+	}
+	contents, err := m.readFile(filepath.Join(m.rootDir, depFile))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -447,20 +458,15 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 		return strings.Split(string(contents), "\n"), nil
 	case Node:
 		var nodeDeps []string
-		var pkgJSON map[string]interface{}
-		err = json.Unmarshal(contents, &pkgJSON)
+		var pj pkgJSON
+		err = json.Unmarshal(contents, &pj)
 		if err != nil {
 			return nil, err
 		}
-		deps, ok := pkgJSON["dependencies"]
-		if !ok {
+		if len(pj.Deps) == 0 {
 			return nil, nil
 		}
-		if reflect.TypeOf(deps).String() != "map[string]string" {
-			return nil, fmt.Errorf("'package.json' is of unexpected format")
-		}
-
-		for k, v := range deps.(map[string]string) {
+		for k, v := range pj.Deps {
 			nodeDeps = append(nodeDeps, fmt.Sprintf("%s@%s", k, v))
 		}
 		return nodeDeps, nil
@@ -473,27 +479,24 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 func (m *Manager) GetDepChanges() (*DepChanges, error) {
 	progInfo, err := m.GetProgInfo()
 	if progInfo == nil {
-		runtime, err := m.GetRuntime()
-		if err != nil {
-			return nil, err
-		}
-		deps, err := m.readDeps(runtime)
-		if err != nil {
-			return nil, err
-		}
-		return &DepChanges{
-			Added: deps,
-		}, nil
+		return nil, fmt.Errorf("no program information found")
 	}
 
+	if progInfo.Runtime == "" {
+		progInfo.Runtime, err = m.GetRuntime()
+		if err != nil {
+			return nil, err
+		}
+	}
 	deps, err := m.readDeps(progInfo.Runtime)
 	if err != nil {
 		return nil, err
 	}
 
+	// no previous deps so return all new local deps as added
 	if len(progInfo.Deps) == 0 {
-		if progInfo.Runtime == "" {
-			progInfo.Runtime, err = m.GetRuntime()
+		if len(deps) == 0 {
+			return nil, nil
 		}
 		return &DepChanges{
 			Added: deps,
@@ -554,7 +557,7 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 
 // GetEnvChanges gets changes in stored env keys and keys of the envFile
 func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
-	envs, err := m.readEnvs(envFile)
+	vars, err := m.readEnvs(envFile)
 	if err != nil {
 		return nil, err
 	}
@@ -562,18 +565,18 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 	progInfo, err := m.GetProgInfo()
 	if progInfo == nil {
 		return &EnvChanges{
-			Added: envs,
+			Vars: vars,
 		}, nil
 	}
 
 	if len(progInfo.Envs) == 0 {
 		return &EnvChanges{
-			Added: envs,
+			Vars: vars,
 		}, nil
 	}
 
 	ec := EnvChanges{
-		Added: make(map[string]string),
+		Vars: make(map[string]string),
 	}
 
 	// mark all stored envs as removed
@@ -583,21 +586,19 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 		removedEnvs[e] = struct{}{}
 	}
 
-	for k, v := range envs {
+	for k, v := range vars {
 		if _, ok := removedEnvs[k]; ok {
-			// remove from deleted if seen
+			// delete from removed if seen
 			delete(removedEnvs, k)
-		} else {
-			// add as new env if not seen
-			ec.Added[k] = v
 		}
+		ec.Vars[k] = v
 	}
 
 	for e := range removedEnvs {
 		ec.Removed = append(ec.Removed, e)
 	}
 
-	if len(ec.Added) == 0 && len(ec.Removed) == 0 {
+	if len(ec.Vars) == 0 && len(ec.Removed) == 0 {
 		return nil, nil
 	}
 
@@ -610,6 +611,10 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 	// use root dir as dir to store if targetDir is not provided
 	if targetDir != nil && *targetDir != writeDir {
 		writeDir = filepath.Join(m.rootDir, *targetDir)
+		err := os.MkdirAll(writeDir, dirPermMode)
+		if err != nil {
+			return err
+		}
 	}
 
 	// need to create dirs first before writing the files

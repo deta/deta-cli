@@ -14,7 +14,7 @@ var (
 
 	versionCmd = &cobra.Command{
 		Use:   "version",
-		Short: "print deta version",
+		Short: "Print deta version",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(fmt.Sprintf("%s %s go %s %s", rootCmd.Use, detaVersion, goVersion, platform))
 		},

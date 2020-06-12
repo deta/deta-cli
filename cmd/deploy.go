@@ -11,7 +11,7 @@ import (
 var (
 	deployCmd = &cobra.Command{
 		Use:   "deploy",
-		Short: "deploy a program",
+		Short: "Deploy a program",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  deploy,
 	}
@@ -77,15 +77,12 @@ func deploy(cmd *cobra.Command, args []string) error {
 		}
 
 		msg := "Successfully deployed code changes."
-		runtimeManager.StoreState()
-
-		if dc != nil {
-			msg = fmt.Sprintf("%s%s", msg, "Updating dependencies...")
-		}
 		fmt.Println(msg)
+		runtimeManager.StoreState()
 	}
 
 	if dc != nil {
+		fmt.Println("Updating dependencies...")
 		command := runtime.DepCommands[progInfo.Runtime]
 		if len(dc.Added) > 0 {
 			installCmd := fmt.Sprintf("%s install", command)
@@ -100,6 +97,11 @@ func deploy(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("failed to add dependencies: %v", err)
 			}
 			fmt.Println(o.Output)
+
+			for _, a := range dc.Added {
+				progInfo.Deps = append(progInfo.Deps, a)
+			}
+			runtimeManager.StoreProgInfo(progInfo)
 		}
 		if len(dc.Removed) > 0 {
 			uninstallCmd := fmt.Sprintf("%s uninstall", command)
@@ -114,6 +116,10 @@ func deploy(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("failed to remove dependencies: %v", err)
 			}
 			fmt.Println(o.Output)
+			for _, d := range dc.Removed {
+				progInfo.Deps = removeFromSlice(progInfo.Deps, d)
+			}
+			runtimeManager.StoreProgInfo(progInfo)
 		}
 	}
 	return nil
