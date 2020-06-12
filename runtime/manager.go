@@ -10,16 +10,15 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"strings"
 )
 
 const (
 	// Python runtime
-	Python = "python"
+	Python = "python3.7"
 	// Node runtime
-	Node = "node"
+	Node = "nodejs12.x"
 
 	// DefaultProject default project slug
 	DefaultProject = "default"
@@ -437,9 +436,17 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 	return sc, nil
 }
 
+type pkgJSON struct {
+	Deps map[string]string `json:"dependencies"`
+}
+
 // readDeps from the dependecy files based on runtime
 func (m *Manager) readDeps(runtime string) ([]string, error) {
-	contents, err := m.readFile(depFiles[runtime])
+	depFile, ok := depFiles[runtime]
+	if !ok {
+		return nil, fmt.Errorf("unsupported runtime %s", runtime)
+	}
+	contents, err := m.readFile(filepath.Join(m.rootDir, depFile))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -451,20 +458,15 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 		return strings.Split(string(contents), "\n"), nil
 	case Node:
 		var nodeDeps []string
-		var pkgJSON map[string]interface{}
-		err = json.Unmarshal(contents, &pkgJSON)
+		var pj pkgJSON
+		err = json.Unmarshal(contents, &pj)
 		if err != nil {
 			return nil, err
 		}
-		deps, ok := pkgJSON["dependencies"]
-		if !ok {
+		if len(pj.Deps) == 0 {
 			return nil, nil
 		}
-		if reflect.TypeOf(deps).String() != "map[string]string" {
-			return nil, fmt.Errorf("'package.json' is of unexpected format")
-		}
-
-		for k, v := range deps.(map[string]string) {
+		for k, v := range pj.Deps {
 			nodeDeps = append(nodeDeps, fmt.Sprintf("%s@%s", k, v))
 		}
 		return nodeDeps, nil
@@ -487,6 +489,9 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 		}
 	}
 	deps, err := m.readDeps(progInfo.Runtime)
+	if err != nil {
+		return nil, err
+	}
 
 	// no previous deps so return all new local deps as added
 	if len(progInfo.Deps) == 0 {
@@ -629,7 +634,6 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 		file = filepath.Join(writeDir, file)
 		err := ioutil.WriteFile(file, []byte(content), filePermMode)
 		if err != nil {
-			fmt.Println("Error: ", err)
 			return err
 		}
 	}

@@ -77,15 +77,12 @@ func deploy(cmd *cobra.Command, args []string) error {
 		}
 
 		msg := "Successfully deployed code changes."
-		runtimeManager.StoreState()
-
-		if dc != nil {
-			msg = fmt.Sprintf("%s%s", msg, "Updating dependencies...")
-		}
 		fmt.Println(msg)
+		runtimeManager.StoreState()
 	}
 
 	if dc != nil {
+		fmt.Println("Updating dependencies...")
 		command := runtime.DepCommands[progInfo.Runtime]
 		if len(dc.Added) > 0 {
 			installCmd := fmt.Sprintf("%s install", command)
