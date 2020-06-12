@@ -98,7 +98,7 @@ func new(cmd *cobra.Command, args []string) error {
 		} else if pythonFlag {
 			progRuntime = runtime.Python
 		} else {
-			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python\n'")
+			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python'\n")
 			return nil
 		}
 	}
@@ -150,6 +150,14 @@ func new(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	msg := "Successfully created a new program."
+	fmt.Println(msg)
+	output, err := progInfoToOutput(newProgInfo)
+	if err != nil {
+		os.Stderr.WriteString("program created but failed to show details\n")
+	}
+	fmt.Println(output)
+
 	// dowload template files if dir is empty
 	if isEmpty {
 		// wait for permissions to propagate before viewing program
@@ -197,7 +205,6 @@ func new(cmd *cobra.Command, args []string) error {
 	}
 	runtimeManager.StoreState()
 
-	msg := "Successfully created new program."
 	if dc != nil {
 		msg = fmt.Sprintf("%s%s", msg, "Adding dependencies...")
 		command := runtime.DepCommands[res.Runtime]

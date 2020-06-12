@@ -119,6 +119,7 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 	for k, v := range i.QueryParams {
 		q.Add(k, v)
 	}
+	req.URL.RawQuery = q.Encode()
 
 	res, err := d.client.Do(req)
 	if err != nil {

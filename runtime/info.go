@@ -27,6 +27,7 @@ type ProgInfo struct {
 	Deps    []string `json:"deps"`
 	Envs    []string `json:"envs"`
 	Public  bool     `json:"public"`
+	Visor   string   `json:"log_level"`
 }
 
 // unmarshals data into a ProgInfo
