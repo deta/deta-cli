@@ -183,8 +183,11 @@ func (m *Manager) GetRuntime() (string, error) {
 	var runtime string
 	var found bool
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
+		if path == m.rootDir {
 			return nil
+		}
+		if info.IsDir() {
+			return filepath.SkipDir
 		}
 		_, filename := filepath.Split(path)
 		if r, ok := entryPoints[filename]; ok {
