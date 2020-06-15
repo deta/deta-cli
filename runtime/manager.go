@@ -44,8 +44,8 @@ var (
 	// skipDirs maps runtimes to dirs that should be skipped
 	skipPaths = map[string][]*regexp.Regexp{
 		Python: []*regexp.Regexp{
-			regexp.MustCompile("*.pyc"),
-			regexp.MustCompile("*.rst"),
+			regexp.MustCompile(".*/.pyc"),
+			regexp.MustCompile(".*/.rst"),
 			regexp.MustCompile("__pycache__"),
 		},
 		Node: []*regexp.Regexp{
