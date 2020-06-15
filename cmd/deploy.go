@@ -65,6 +65,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if c != nil {
+		fmt.Prinntln("Deploying...")
 		_, err = client.Deploy(&api.DeployRequest{
 			ProgramID: progInfo.ID,
 			Changes:   c.Changes,
