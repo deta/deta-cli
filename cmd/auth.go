@@ -58,9 +58,9 @@ func updateAuth(value bool, args []string) error {
 	if err != nil {
 		return err
 	}
-	msg := "Successfully disabled http auth."
+	msg := "Successfully disabled http auth"
 	if value {
-		msg = "Successfully enabled http auth."
+		msg = "Successfully enabled http auth"
 	}
 	fmt.Println(msg)
 	return nil

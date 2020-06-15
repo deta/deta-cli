@@ -60,7 +60,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if c == nil && dc == nil {
-		fmt.Println("Program already up to date.")
+		fmt.Println("Program already up to date")
 		return nil
 	}
 
@@ -76,7 +76,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		msg := "Successfully deployed code changes."
+		msg := "Successfully deployed changes"
 		fmt.Println(msg)
 		runtimeManager.StoreState()
 	}

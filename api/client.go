@@ -22,9 +22,6 @@ const (
 var (
 	// set with Makefile during compilation
 	version string
-
-	// ErrUnauthorized unauthorized error
-	ErrUnauthorized = errors.New("Unauthorized")
 )
 
 // DetaClient client that talks with the deta api
@@ -138,7 +135,9 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 	}
 
 	if res.StatusCode >= 200 && res.StatusCode <= 299 && res.StatusCode != 204 {
-		o.Body = b
+		if res.StatusCode != 204 {
+			o.Body = b
+		}
 		return o, nil
 	}
 
@@ -148,8 +147,5 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 		return nil, err
 	}
 	o.Error = &er
-	if res.StatusCode == 401 {
-		return o, ErrUnauthorized
-	}
 	return o, nil
 }
