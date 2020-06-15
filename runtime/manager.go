@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 
 	"io"
 	"io/ioutil"
@@ -35,10 +36,24 @@ var (
 		"main.py":  Python,
 		"index.js": Node,
 	}
+	// maps runtimes to dep files
 	depFiles = map[string]string{
 		Python: "requirements.txt",
 		Node:   "package.json",
 	}
+	// skipDirs maps runtimes to dirs that should be skipped
+	skipPaths = map[string][]*regexp.Regexp{
+		Python: []*regexp.Regexp{
+			regexp.MustCompile("*.pyc"),
+			regexp.MustCompile("*.rst"),
+			regexp.MustCompile("__pycache__"),
+		},
+		Node: []*regexp.Regexp{
+			regexp.MustCompile("node_modules"),
+		},
+	}
+
+	// local paths to store information
 	detaDir      = ".deta"
 	userInfoFile = "user_info"
 	progInfoFile = "prog_info"
@@ -178,8 +193,13 @@ func (m *Manager) IsProgDirEmpty() (bool, error) {
 	return true, nil
 }
 
-// GetRuntime figures out the runtime of the program from entrypoint file if present in the root dir
+// GetRuntime gets runtime from proginfo or figures out the runtime of the program from entrypoint file if present in the root dir
 func (m *Manager) GetRuntime() (string, error) {
+	progInfo, _ := m.GetProgInfo()
+	if progInfo != nil {
+		return progInfo.Runtime, nil
+	}
+
 	var runtime string
 	var found bool
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
@@ -221,6 +241,23 @@ func (m *Manager) isHidden(path string) (bool, error) {
 	}
 }
 
+// should skip if the file or dir should be skipped
+func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
+	hidden, err := m.isHidden(path)
+	if err != nil {
+		return false, err
+	}
+	if hidden {
+		return true, nil
+	}
+	for _, re := range skipPaths[runtime] {
+		if match := re.MatchString(path); match {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // reads the contents of a file
 func (m *Manager) readFile(path string) ([]byte, error) {
 	f, err := os.Open(path)
@@ -247,8 +284,13 @@ func (m *Manager) calcChecksum(path string) (string, error) {
 
 // StoreState stores hashes of the current state of all files(not hidden) in the root program directory
 func (m *Manager) StoreState() error {
+	r, err := m.GetRuntime()
+	if err != nil {
+		return err
+	}
+
 	sm := make(stateMap)
-	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -258,20 +300,18 @@ func (m *Manager) StoreState() error {
 			return err
 		}
 
-		hidden, err := m.isHidden(path)
+		shouldSkip, err := m.shouldSkip(path, r)
 		if err != nil {
 			return err
 		}
 
 		if info.IsDir() {
-			// skip hidden directories
-			if hidden {
+			if shouldSkip {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		// skip hidden files
-		if hidden {
+		if shouldSkip {
 			return nil
 		}
 
@@ -313,11 +353,16 @@ func (m *Manager) getStoredState() (stateMap, error) {
 
 // readAll reads all the files and returns the contents as stateChanges
 func (m *Manager) readAll() (*StateChanges, error) {
+	r, err := m.GetRuntime()
+	if err != nil {
+		return nil, err
+	}
+
 	sc := &StateChanges{
 		Changes: make(map[string]string),
 	}
 
-	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -326,17 +371,17 @@ func (m *Manager) readAll() (*StateChanges, error) {
 			return err
 		}
 
-		hidden, err := m.isHidden(path)
+		shouldSkip, err := m.shouldSkip(path, r)
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
-			if hidden {
+			if shouldSkip {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if hidden {
+		if shouldSkip {
 			return nil
 		}
 
@@ -361,6 +406,11 @@ func (m *Manager) readAll() (*StateChanges, error) {
 
 // GetChanges checks if the state has changed in the root directory
 func (m *Manager) GetChanges() (*StateChanges, error) {
+	r, err := m.GetRuntime()
+	if err != nil {
+		return nil, err
+	}
+
 	sc := &StateChanges{
 		Changes: make(map[string]string),
 	}
@@ -388,17 +438,17 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		if err != nil {
 			return err
 		}
-		hidden, err := m.isHidden(path)
+		shouldSkip, err := m.shouldSkip(path, r)
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
-			if hidden {
+			if shouldSkip {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if hidden {
+		if shouldSkip {
 			return nil
 		}
 
