@@ -177,11 +177,8 @@ type ViewProgramFileRequest struct {
 	Region    string
 }
 
-// ViewProgramFileResponse view program file response
-type ViewProgramFileResponse string
-
 // ViewProgramFile view a particular file of the program
-func (c *DetaClient) ViewProgramFile(r *ViewProgramFileRequest) (*ViewProgramFileResponse, error) {
+func (c *DetaClient) ViewProgramFile(r *ViewProgramFileRequest) (*string, error) {
 	headers := make(map[string]string)
 	c.injectResourceHeader(headers, r.Account, r.Region)
 
@@ -209,12 +206,7 @@ func (c *DetaClient) ViewProgramFile(r *ViewProgramFileRequest) (*ViewProgramFil
 		}
 		return nil, fmt.Errorf("failed to get '%s': %v", r.Filepath, msg)
 	}
-
-	var resp ViewProgramFileResponse
-	err = json.Unmarshal(o.Body, &resp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get '%s': %v", r.Filepath, err)
-	}
+	resp := string(o.Body)
 	return &resp, nil
 }
 
