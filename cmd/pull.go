@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/deta/deta-cli/api"
 	"github.com/deta/deta-cli/runtime"
@@ -48,9 +49,20 @@ func pull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	pullPath := fmt.Sprintf("%s-latest", progInfo.Name)
+	pullPath := fmt.Sprintf("%s", progInfo.Name)
 	if len(args) != 0 {
 		pullPath = filepath.Join(args[0], pullPath)
+	}
+
+	_, err = os.Stat(pullPath)
+	if err == nil {
+		fmt.Println(fmt.Sprintf("'%s' already exists. Files already present may be overwritten. Continue? [y/n]", pullPath))
+		var cont string
+		fmt.Scanf("%s", &cont)
+		if strings.ToLower(cont) != "y" {
+			fmt.Println("Pull aborted")
+			return nil
+		}
 	}
 
 	o, err := client.DownloadProgram(&api.DownloadProgramRequest{

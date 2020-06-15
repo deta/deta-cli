@@ -60,11 +60,12 @@ func deploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if c == nil && dc == nil {
-		fmt.Println("Program already up to date.")
+		fmt.Println("Program already up to date")
 		return nil
 	}
 
 	if c != nil {
+		fmt.Println("Deploying...")
 		_, err = client.Deploy(&api.DeployRequest{
 			ProgramID: progInfo.ID,
 			Changes:   c.Changes,
@@ -76,7 +77,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		msg := "Successfully deployed code changes."
+		msg := "Successfully deployed changes"
 		fmt.Println(msg)
 		runtimeManager.StoreState()
 	}
