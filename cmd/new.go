@@ -29,10 +29,10 @@ var (
 
 func init() {
 	// flags
-	newCmd.Flags().BoolVar(&nodeFlag, "node", false, "create a program with node runtime")
-	newCmd.Flags().BoolVar(&pythonFlag, "python", false, "create a program with python runtime")
-	newCmd.Flags().StringVarP(&newProgName, "name", "n", "", "name of the new program")
-	newCmd.Flags().StringVarP(&projectName, "project", "p", "", "project to create the program under")
+	newCmd.Flags().BoolVarP(&nodeFlag, "node", "n", false, "create a program with node runtime")
+	newCmd.Flags().BoolVarP(&pythonFlag, "python", "p", false, "create a program with python runtime")
+	newCmd.Flags().StringVar(&newProgName, "name", "", "name of the new program")
+	newCmd.Flags().StringVar(&projectName, "project", "", "project to create the program under")
 
 	rootCmd.AddCommand(newCmd)
 }
@@ -221,6 +221,10 @@ func new(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("failed to add dependencies: %v", err)
 			}
 			fmt.Println(o.Output)
+			for _, a := range dc.Added {
+				newProgInfo.Deps = append(newProgInfo.Deps, a)
+			}
+			runtimeManager.StoreProgInfo(newProgInfo)
 		}
 	}
 	return nil
