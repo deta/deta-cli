@@ -5,7 +5,7 @@ import "github.com/spf13/cobra"
 var (
 	authDisableCmd = &cobra.Command{
 		Use:   "disable [value]",
-		Short: "Disable http auth for a deta program",
+		Short: "Disable http auth for a deta micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  disableAuth,
 	}

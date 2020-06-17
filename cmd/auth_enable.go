@@ -5,7 +5,7 @@ import "github.com/spf13/cobra"
 var (
 	authEnableCmd = &cobra.Command{
 		Use:   "enable [value]",
-		Short: "Enable http auth for a deta program",
+		Short: "Enable http auth for a deta micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  enableAuth,
 	}

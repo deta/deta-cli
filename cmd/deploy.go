@@ -11,7 +11,7 @@ import (
 var (
 	deployCmd = &cobra.Command{
 		Use:   "deploy",
-		Short: "Deploy a program",
+		Short: "Deploy a deta micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  deploy,
 	}
@@ -42,7 +42,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if !isInitialized {
-		return fmt.Errorf("deta program not initilialized. see `deta new --help` to create a program")
+		return fmt.Errorf("deta micro not initilialized. see `deta new --help` to create a micro")
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()
@@ -60,7 +60,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if c == nil && dc == nil {
-		fmt.Println("Program already up to date")
+		fmt.Println("already up to date")
 		return nil
 	}
 

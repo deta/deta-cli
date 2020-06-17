@@ -12,7 +12,7 @@ import (
 var (
 	authCmd = &cobra.Command{
 		Use:   "auth [command]",
-		Short: "Change auth settings for a deta program",
+		Short: "Change auth settings for a deta micro",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Usage()
@@ -43,7 +43,7 @@ func updateAuth(value bool, args []string) error {
 	}
 
 	if !isInitialized {
-		return fmt.Errorf("no deta program initialized in '%s'", wd)
+		return fmt.Errorf("no deta micro initialized in '%s'", wd)
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()

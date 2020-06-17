@@ -684,10 +684,13 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 
 	// write the files
 	for file, content := range progFiles {
-		file = filepath.Join(writeDir, file)
-		err := ioutil.WriteFile(file, []byte(content), filePermMode)
-		if err != nil {
-			return err
+		_, f := filepath.Split(file)
+		if f != "" {
+			file = filepath.Join(writeDir, file)
+			err := ioutil.WriteFile(file, []byte(content), filePermMode)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

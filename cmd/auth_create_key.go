@@ -18,7 +18,7 @@ var (
 
 	createAPIKeyCmd = &cobra.Command{
 		Use:   "create-api-key [falgs]",
-		Short: "Create api keys for a deta program",
+		Short: "Create api keys for a deta micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  createAPIKey,
 	}
@@ -52,7 +52,7 @@ func createAPIKey(cmd *cobra.Command, args []string) error {
 	}
 
 	if !isInitialized {
-		return fmt.Errorf("No deta program initialized in '%s'", wd)
+		return fmt.Errorf("No deta micro initialized in '%s'", wd)
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()

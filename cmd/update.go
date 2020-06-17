@@ -16,7 +16,7 @@ var (
 
 	updateCmd = &cobra.Command{
 		Use:   "update",
-		Short: "Update a program",
+		Short: "Update a deta micro",
 		RunE:  update,
 		Args:  cobra.MaximumNArgs(1),
 	}
@@ -24,7 +24,7 @@ var (
 
 func init() {
 	updateCmd.Flags().StringVarP(&envsPath, "env", "e", "", "path to env file")
-	updateCmd.Flags().StringVarP(&newProgName, "name", "n", "", "new name of the program")
+	updateCmd.Flags().StringVarP(&newProgName, "name", "n", "", "new name of the micro")
 	rootCmd.AddCommand(updateCmd)
 }
 
@@ -49,7 +49,7 @@ func update(cmd *cobra.Command, args []string) error {
 
 	isInitialized, err := runtimeManager.IsInitialized()
 	if !isInitialized {
-		return fmt.Errorf("No deta program initialized in `%s'", wd)
+		return fmt.Errorf("No deta micro initialized in `%s'", wd)
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()
@@ -63,12 +63,12 @@ func update(cmd *cobra.Command, args []string) error {
 			Name:      newProgName,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to update program: %v", err)
+			return fmt.Errorf("failed to update micro: %v", err)
 		}
 		progInfo.Name = newProgName
 		runtimeManager.StoreProgInfo(progInfo)
 
-		msg := "Successfully updated program name."
+		msg := "Successfully updated micro's name"
 
 		if envsPath != "" {
 			msg = fmt.Sprintf("%s%s", msg, "Updating environment variables...")
@@ -98,7 +98,7 @@ func update(cmd *cobra.Command, args []string) error {
 			Vars:      vars,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to update program environment variables: %v", err)
+			return fmt.Errorf("Failed to update micro's environment variables: %v", err)
 		}
 		for k := range envChanges.Vars {
 			if !inSlice(progInfo.Envs, k) {
@@ -110,7 +110,7 @@ func update(cmd *cobra.Command, args []string) error {
 		}
 		runtimeManager.StoreProgInfo(progInfo)
 
-		fmt.Println("Successfully updated program environment variables.")
+		fmt.Println("Successfully updated micro's environment variables.")
 	}
 	return nil
 }
