@@ -12,7 +12,7 @@ import (
 var (
 	deleteAPIKeyCmd = &cobra.Command{
 		Use:   "delete-api-key [flags]",
-		Short: "Delete api keys for a deta program",
+		Short: "Delete api keys for a deta micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  deleteAPIKey,
 	}
@@ -45,7 +45,7 @@ func deleteAPIKey(cmd *cobra.Command, args []string) error {
 	}
 
 	if !isInitialized {
-		return fmt.Errorf("No deta program initialized in '%s'", wd)
+		return fmt.Errorf("No deta micro initialized in '%s'", wd)
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()

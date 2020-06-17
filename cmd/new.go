@@ -21,7 +21,7 @@ var (
 
 	newCmd = &cobra.Command{
 		Use:   "new [flags] [path]",
-		Short: "Create a new program",
+		Short: "Create a new micro",
 		RunE:  new,
 		Args:  cobra.MaximumNArgs(1),
 	}
@@ -29,10 +29,10 @@ var (
 
 func init() {
 	// flags
-	newCmd.Flags().BoolVarP(&nodeFlag, "node", "n", false, "create a program with node runtime")
-	newCmd.Flags().BoolVarP(&pythonFlag, "python", "p", false, "create a program with python runtime")
-	newCmd.Flags().StringVar(&newProgName, "name", "", "name of the new program")
-	newCmd.Flags().StringVar(&projectName, "project", "", "project to create the program under")
+	newCmd.Flags().BoolVarP(&nodeFlag, "node", "n", false, "create a micro with node runtime")
+	newCmd.Flags().BoolVarP(&pythonFlag, "python", "p", false, "create a micro with python runtime")
+	newCmd.Flags().StringVar(&newProgName, "name", "", "name of the new micro")
+	newCmd.Flags().StringVar(&projectName, "project", "", "project to create the micro under")
 
 	rootCmd.AddCommand(newCmd)
 }
@@ -72,7 +72,7 @@ func new(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if isInitialized {
-		return fmt.Errorf("a deta program already present in '%s'", wd)
+		return fmt.Errorf("a deta micro already present in '%s'", wd)
 	}
 
 	// check if program root dir is empty
@@ -207,6 +207,7 @@ func new(cmd *cobra.Command, args []string) error {
 
 	if dc != nil {
 		msg = fmt.Sprintf("%s%s", msg, "Adding dependencies...")
+		fmt.Println(msg)
 		command := runtime.DepCommands[res.Runtime]
 		if len(dc.Added) > 0 {
 			installCmd := fmt.Sprintf("%s install", command)

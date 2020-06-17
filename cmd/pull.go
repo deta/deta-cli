@@ -14,7 +14,7 @@ import (
 var (
 	pullCmd = &cobra.Command{
 		Use:   "pull [path_to_pull_to]",
-		Short: "Pull the lastest deployed code of a deta program",
+		Short: "Pull the lastest deployed code of a deta micro",
 		RunE:  pull,
 		Args:  cobra.MaximumNArgs(1),
 	}
@@ -41,7 +41,7 @@ func pull(cmd *cobra.Command, args []string) error {
 	}
 
 	if !isInitialized {
-		return fmt.Errorf("no deta program initialized in '%s'", wd)
+		return fmt.Errorf("no deta micro initialized in '%s'", wd)
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/deta/deta-cli/api"
@@ -30,7 +29,7 @@ Complete documentation available at https://docs.deta.sh`,
 // Execute xx
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		os.Stderr.WriteString(err.Error())
 		os.Exit(1)
 	}
 }

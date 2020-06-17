@@ -5,7 +5,7 @@ import "github.com/spf13/cobra"
 var (
 	visorEnableCmd = &cobra.Command{
 		Use:   "enable [value]",
-		Short: "Enable visor for a deta program",
+		Short: "Enable visor for a deta micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  enableVisor,
 	}

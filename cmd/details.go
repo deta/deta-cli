@@ -11,7 +11,7 @@ import (
 var (
 	detailsCmd = &cobra.Command{
 		Use:   "details [flags] [path]",
-		Short: "Details about a deta program",
+		Short: "Details about a deta micro",
 		RunE:  details,
 		Args:  cobra.MaximumNArgs(1),
 	}
@@ -38,14 +38,14 @@ func details(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if !isInitialzied {
-		return fmt.Errorf("no deta program initialized in '%s'", wd)
+		return fmt.Errorf("no deta micro initialized in '%s'", wd)
 	}
 	progInfo, err := runtimeManager.GetProgInfo()
 	if err != nil {
 		return err
 	}
 	if progInfo == nil {
-		return fmt.Errorf("failed to get program details")
+		return fmt.Errorf("failed to get deta micro details")
 	}
 	output, err := progInfoToOutput(progInfo)
 	if err != nil {
