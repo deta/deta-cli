@@ -599,7 +599,9 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 	// expect format KEY=VALUE
 	envs := make(map[string]string)
 	for _, l := range lines {
-		if l != "" {
+		l = strings.ReplaceAll(l, " ", "")
+		// skip empty lines and commentes #
+		if l != "" && !strings.HasPrefix(l, "#") {
 			vars := strings.Split(l, "=")
 			if len(vars) != 2 {
 				return nil, fmt.Errorf("Env file has invalid format")
