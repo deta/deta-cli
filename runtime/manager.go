@@ -508,7 +508,16 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 	}
 	switch runtime {
 	case Python:
-		return strings.Split(string(contents), "\n"), nil
+		lines := strings.Split(string(contents), "\n")
+		var deps []string
+		for _, l := range lines {
+			l = strings.ReplaceAll(l, " ", "")
+			// skip empty lines and commentes #
+			if l != "" && !strings.HasPrefix(l, "#") {
+				deps = append(deps, l)
+			}
+		}
+		return deps, nil
 	case Node:
 		var nodeDeps []string
 		var pj pkgJSON

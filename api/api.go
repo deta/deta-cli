@@ -83,6 +83,7 @@ type NewProgramResponse struct {
 	Deps    []string `json:"deps"`
 	Envs    []string `json:"envs"`
 	Public  bool     `json:"http_auth"`
+	Visor   string   `json:"log_level"`
 }
 
 // NewProgram sends a new program request
@@ -375,7 +376,8 @@ type UpdateProgDepsRequest struct {
 
 // UpdateProgDepsResponse response to update program dependencies request
 type UpdateProgDepsResponse struct {
-	Output string `json:"output"`
+	Output   string `json:"output"`
+	HasError bool   `json:"-"` // if the output has error
 }
 
 // UpdateProgDeps update program dependencies
@@ -393,17 +395,23 @@ func (c *DetaClient) UpdateProgDeps(req *UpdateProgDepsRequest) (*UpdateProgDeps
 	}
 
 	if o.Status != 200 {
-		msg := o.Error.Message
-		if msg == "" {
-			msg = o.Error.Errors[0]
+		// 209 is used for special case for this request
+		if o.Status != 209 {
+			msg := o.Error.Message
+			if msg == "" {
+				msg = o.Error.Errors[0]
+			}
+			return nil, fmt.Errorf("failed to update dependencies: %s", msg)
 		}
-		return nil, fmt.Errorf("failed to update dependencies: %s", msg)
 	}
 
 	var resp UpdateProgDepsResponse
 	err = json.Unmarshal(o.Body, &resp)
 	if err != nil {
 		return nil, err
+	}
+	if o.Status == 209 {
+		resp.HasError = true
 	}
 	return &resp, nil
 }
@@ -581,4 +589,51 @@ func (c *DetaClient) GetProjects(req *GetProjectsRequest) ([]GetProjectsResponse
 		return nil, err
 	}
 	return resp, nil
+}
+
+// GetProgDetailsRequest request to get program details
+type GetProgDetailsRequest struct {
+	ProgramID string
+}
+
+// GetProgDetailsResponse response to get program details
+type GetProgDetailsResponse struct {
+	ID      string   `json:"id"`
+	Space   int64    `json:"space"`
+	Runtime string   `json:"runtime"`
+	Name    string   `json:"name"`
+	Path    string   `json:"path"`
+	Project string   `json:"project"`
+	Account string   `json:"account"`
+	Region  string   `json:"region"`
+	Deps    []string `json:"deps"`
+	Envs    []string `json:"envs"`
+	Public  bool     `json:"public"`
+	Visor   string   `json:"log_level"`
+}
+
+// GetProgDetails get program details
+func (c *DetaClient) GetProgDetails(req *GetProgDetailsRequest) (*GetProgDetailsResponse, error) {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/programs/%s", req.ProgramID),
+		Method:    "GET",
+		NeedsAuth: true,
+	}
+	o, err := c.request(i)
+	if err != nil {
+		return nil, err
+	}
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return nil, fmt.Errorf("failed to get details: %v", msg)
+	}
+	var resp GetProgDetailsResponse
+	err = json.Unmarshal(o.Body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }

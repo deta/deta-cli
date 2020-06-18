@@ -28,6 +28,8 @@ type ProgInfo struct {
 	Envs    []string `json:"envs"`
 	Public  bool     `json:"public"`
 	Visor   string   `json:"log_level"`
+	// to decide whether to reload the deps later while updating
+	ReloadDeps bool `json:"reload_deps"`
 }
 
 // unmarshals data into a ProgInfo

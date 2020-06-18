@@ -150,11 +150,11 @@ func new(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	msg := "Successfully created a new program."
+	msg := "Successfully created a new program"
 	fmt.Println(msg)
 	output, err := progInfoToOutput(newProgInfo)
 	if err != nil {
-		os.Stderr.WriteString("program created but failed to show details\n")
+		os.Stderr.WriteString("Program created but failed to show details\n")
 	}
 	fmt.Println(output)
 
@@ -219,12 +219,21 @@ func new(cmd *cobra.Command, args []string) error {
 				Command:   installCmd,
 			})
 			if err != nil {
-				return fmt.Errorf("failed to add dependencies: %v", err)
+				return err
 			}
 			fmt.Println(o.Output)
-			for _, a := range dc.Added {
-				newProgInfo.Deps = append(newProgInfo.Deps, a)
+			if o.HasError {
+				fmt.Println()
+				return fmt.Errorf("failed to update dependecies: error on one or more dependencies, no dependencies were added, see output for details")
 			}
+			// store updated program info
+			progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
+				ProgramID: newProgInfo.ID,
+			})
+			if err != nil {
+				newProgInfo.ReloadDeps = true
+			}
+			newProgInfo.Deps = progDetails.Deps
 			runtimeManager.StoreProgInfo(newProgInfo)
 		}
 	}
