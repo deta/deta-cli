@@ -150,11 +150,11 @@ func new(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	msg := "Successfully created a new program"
+	msg := "Successfully created a new micro"
 	fmt.Println(msg)
 	output, err := progInfoToOutput(newProgInfo)
 	if err != nil {
-		os.Stderr.WriteString("Program created but failed to show details\n")
+		os.Stderr.WriteString("Micro created but failed to show details\n")
 	}
 	fmt.Println(output)
 
