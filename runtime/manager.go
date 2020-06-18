@@ -599,11 +599,13 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 	// expect format KEY=VALUE
 	envs := make(map[string]string)
 	for _, l := range lines {
-		vars := strings.Split(l, "=")
-		if len(vars) != 2 {
-			return nil, fmt.Errorf("Env file has invalid format")
+		if l != "" {
+			vars := strings.Split(l, "=")
+			if len(vars) != 2 {
+				return nil, fmt.Errorf("Env file has invalid format")
+			}
+			envs[vars[0]] = vars[1]
 		}
-		envs[vars[0]] = vars[1]
 	}
 	return envs, nil
 }

@@ -17,7 +17,7 @@ var (
 	apiKeyDesc string
 
 	createAPIKeyCmd = &cobra.Command{
-		Use:   "create-api-key [falgs]",
+		Use:   "create-api-key",
 		Short: "Create api keys for a deta micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  createAPIKey,

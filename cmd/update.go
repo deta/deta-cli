@@ -58,6 +58,7 @@ func update(cmd *cobra.Command, args []string) error {
 	}
 
 	if newProgName != "" {
+		fmt.Println("Updating the name..")
 		err := client.UpdateProgName(&api.UpdateProgNameRequest{
 			ProgramID: progInfo.ID,
 			Name:      newProgName,
@@ -68,15 +69,11 @@ func update(cmd *cobra.Command, args []string) error {
 		progInfo.Name = newProgName
 		runtimeManager.StoreProgInfo(progInfo)
 
-		msg := "Successfully updated micro's name"
-
-		if envsPath != "" {
-			msg = fmt.Sprintf("%s%s", msg, "Updating environment variables...")
-		}
-		fmt.Println(msg)
+		fmt.Println("Successfully update micro's name")
 	}
 
 	if envsPath != "" {
+		fmt.Println("Updating environment variables...")
 		envChanges, err := runtimeManager.GetEnvChanges(envsPath)
 		if err != nil {
 			return fmt.Errorf("failed to update env vars: %v", err)
@@ -98,7 +95,7 @@ func update(cmd *cobra.Command, args []string) error {
 			Vars:      vars,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to update micro's environment variables: %v", err)
+			return err
 		}
 		for k := range envChanges.Vars {
 			if !inSlice(progInfo.Envs, k) {
@@ -110,7 +107,7 @@ func update(cmd *cobra.Command, args []string) error {
 		}
 		runtimeManager.StoreProgInfo(progInfo)
 
-		fmt.Println("Successfully updated micro's environment variables.")
+		fmt.Println("Successfully updated micro's environment variables")
 	}
 	return nil
 }

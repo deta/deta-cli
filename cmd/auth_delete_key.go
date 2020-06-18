@@ -11,7 +11,7 @@ import (
 
 var (
 	deleteAPIKeyCmd = &cobra.Command{
-		Use:   "delete-api-key [flags]",
+		Use:   "delete-api-key",
 		Short: "Delete api keys for a deta micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  deleteAPIKey,
