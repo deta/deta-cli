@@ -68,6 +68,11 @@ var (
 		Python: "pip",
 		Node:   "npm",
 	}
+
+	// ErrNoEntrypoint noe entrypoint file present
+	ErrNoEntrypoint = errors.New("no entrypoint file present")
+	// ErrEntrypointConflict conflicting entrypoint files
+	ErrEntrypointConflict = errors.New("conflicting entrypoint files present")
 )
 
 // Manager runtime manager handles files management and other services
@@ -228,7 +233,7 @@ func (m *Manager) GetRuntime() (string, error) {
 		return "", err
 	}
 	if !found {
-		return "", fmt.Errorf("No supported runtime found in %s", m.rootDir)
+		return "", ErrNoEntrypoint
 	}
 	return runtime, nil
 }
@@ -319,7 +324,7 @@ func (m *Manager) StoreState() error {
 			return nil
 		}
 
-		hashSum, err := m.calcChecksum(path)
+		hashSum, err := m.calcChecksum(filepath.Join(m.rootDir, path))
 		if err != nil {
 			return err
 		}
@@ -389,7 +394,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 			return nil
 		}
 
-		f, err := os.Open(path)
+		f, err := os.Open(filepath.Join(m.rootDir, path))
 		if err != nil {
 			return err
 		}
@@ -711,4 +716,9 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 		}
 	}
 	return nil
+}
+
+// Clean removes files creatd by the rutime manager
+func (m *Manager) Clean() error {
+	return os.RemoveAll(m.detaPath)
 }

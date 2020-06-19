@@ -79,6 +79,7 @@ func reloadDeps(m *runtime.Manager, p *runtime.ProgInfo) error {
 func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) error {
 	c, err := m.GetChanges()
 	if err != nil {
+		fmt.Println("get changes err:", err)
 		return err
 	}
 

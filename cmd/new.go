@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -55,15 +56,38 @@ func new(cmd *cobra.Command, args []string) error {
 		wd = args[0]
 	}
 
+	runtimeManager, err := runtime.NewManager(&wd)
+	if err != nil {
+		return err
+	}
+
+	// check if program root dir is empty
+	isEmpty, err := runtimeManager.IsProgDirEmpty()
+	if err != nil {
+		return err
+	}
+
+	progRuntime, err := runtimeManager.GetRuntime()
+	if err != nil {
+		if errors.Is(err, runtime.ErrNoEntrypoint) && !isEmpty {
+			if newProgName == "" {
+				os.Stderr.WriteString(fmt.Sprintf("No entrypoint file found in '%s'. Please, provide a name or path to create a new micro elsewhere. See `deta new --help`.'\n", wd))
+				return nil
+			}
+			runtimeManager.Clean()
+			wd = filepath.Join(wd, newProgName)
+			err := os.MkdirAll(wd, 0760)
+			if err != nil {
+				return err
+			}
+			runtimeManager, err = runtime.NewManager(&wd)
+		}
+	}
+
 	if newProgName == "" {
 		// use current working dir as the default name of the program
 		// replace spaces with underscore from the dir name if present
 		newProgName = strings.ReplaceAll(filepath.Base(wd), " ", "_")
-	}
-
-	runtimeManager, err := runtime.NewManager(&wd)
-	if err != nil {
-		return err
 	}
 
 	// checks if a program is already present in the working directory
@@ -75,13 +99,10 @@ func new(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("a deta micro already present in '%s'", wd)
 	}
 
-	// check if program root dir is empty
-	isEmpty, err := runtimeManager.IsProgDirEmpty()
+	isEmpty, err = runtimeManager.IsProgDirEmpty()
 	if err != nil {
 		return err
 	}
-
-	var progRuntime string
 	if !isEmpty {
 		progRuntime, err = runtimeManager.GetRuntime()
 		if err != nil {
