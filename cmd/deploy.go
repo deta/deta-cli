@@ -82,10 +82,6 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 		return err
 	}
 
-	if c != nil {
-		fmt.Println(c)
-	}
-
 	err = reloadDeps(m, p)
 	if err != nil {
 		return err
