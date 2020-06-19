@@ -36,20 +36,24 @@ var (
 		"main.py":  Python,
 		"index.js": Node,
 	}
+
 	// maps runtimes to dep files
 	depFiles = map[string]string{
 		Python: "requirements.txt",
 		Node:   "package.json",
 	}
-	// skipDirs maps runtimes to dirs that should be skipped
+
+	// skipPaths maps runtimes to paths that should be skipped
 	skipPaths = map[string][]*regexp.Regexp{
 		Python: []*regexp.Regexp{
 			regexp.MustCompile(".*\\.pyc"),
 			regexp.MustCompile(".*\\.rst"),
 			regexp.MustCompile("__pycache__"),
+			regexp.MustCompile(".*~$"), // vim swap files
 		},
 		Node: []*regexp.Regexp{
 			regexp.MustCompile("node_modules"),
+			regexp.MustCompile(".*~$"), // vim swap files
 		},
 	}
 

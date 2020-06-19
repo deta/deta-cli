@@ -254,10 +254,10 @@ func (c *DetaClient) DownloadProgram(req *DownloadProgramRequest) (*DownloadProg
 				if err != nil {
 					return nil, err
 				}
-				progFiles[file] = string(*contents)
+				progFiles[file] = *contents
+			} else {
+				progFiles[file] = ""
 			}
-			// empty folders
-			progFiles[file] = ""
 		}
 	}
 	return &DownloadProgramResponse{Files: progFiles}, err
