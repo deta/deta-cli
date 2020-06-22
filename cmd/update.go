@@ -24,12 +24,12 @@ var (
 
 func init() {
 	updateCmd.Flags().StringVarP(&envsPath, "env", "e", "", "path to env file")
-	updateCmd.Flags().StringVarP(&newProgName, "name", "n", "", "new name of the micro")
+	updateCmd.Flags().StringVarP(&progName, "name", "n", "", "new name of the micro")
 	rootCmd.AddCommand(updateCmd)
 }
 
 func update(cmd *cobra.Command, args []string) error {
-	if newProgName == "" && envsPath == "" {
+	if progName == "" && envsPath == "" {
 		cmd.Usage()
 		return nil
 	}
@@ -57,16 +57,16 @@ func update(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if newProgName != "" {
+	if progName != "" {
 		fmt.Println("Updating the name..")
 		err := client.UpdateProgName(&api.UpdateProgNameRequest{
 			ProgramID: progInfo.ID,
-			Name:      newProgName,
+			Name:      progName,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to update micro: %v", err)
 		}
-		progInfo.Name = newProgName
+		progInfo.Name = progName
 		runtimeManager.StoreProgInfo(progInfo)
 
 		fmt.Println("Successfully update micro's name")

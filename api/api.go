@@ -254,10 +254,10 @@ func (c *DetaClient) DownloadProgram(req *DownloadProgramRequest) (*DownloadProg
 				if err != nil {
 					return nil, err
 				}
-				progFiles[file] = string(*contents)
+				progFiles[file] = *contents
+			} else {
+				progFiles[file] = ""
 			}
-			// empty folders
-			progFiles[file] = ""
 		}
 	}
 	return &DownloadProgramResponse{Files: progFiles}, err
@@ -593,7 +593,9 @@ func (c *DetaClient) GetProjects(req *GetProjectsRequest) ([]GetProjectsResponse
 
 // GetProgDetailsRequest request to get program details
 type GetProgDetailsRequest struct {
-	ProgramID string
+	Program string
+	Project string
+	Space   int64
 }
 
 // GetProgDetailsResponse response to get program details
@@ -615,7 +617,7 @@ type GetProgDetailsResponse struct {
 // GetProgDetails get program details
 func (c *DetaClient) GetProgDetails(req *GetProgDetailsRequest) (*GetProgDetailsResponse, error) {
 	i := &requestInput{
-		Path:      fmt.Sprintf("/programs/%s", req.ProgramID),
+		Path:      fmt.Sprintf("/spaces/%d/projects/%s/programs/%s", req.Space, req.Project, req.Program),
 		Method:    "GET",
 		NeedsAuth: true,
 	}

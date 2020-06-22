@@ -11,7 +11,7 @@ import (
 var (
 	deployCmd = &cobra.Command{
 		Use:   "deploy",
-		Short: "Deploy a deta micro",
+		Short: "Deploy a Deta Micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  deploy,
 	}
@@ -49,34 +49,69 @@ func deploy(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	c, err := runtimeManager.GetChanges()
+	err = deployChanges(runtimeManager, progInfo, false)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// reloadDeps gets program details from the server and updates the prog info deps from prog details
+func reloadDeps(m *runtime.Manager, p *runtime.ProgInfo) error {
+	if !p.ReloadDeps {
+		return nil
+	}
+	progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
+		Program: p.ID,
+		Project: p.Project,
+		Space:   p.Space,
+	})
+	if err != nil {
+		return err
+	}
+	p.Deps = progDetails.Deps
+	err = m.StoreProgInfo(p)
+	if err != nil {
+		return err
+	}
+	p.ReloadDeps = false
+	return nil
+}
+
+func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) error {
+	c, err := m.GetChanges()
+	if err != nil {
+		fmt.Println("get changes err:", err)
+		return err
+	}
+
+	err = reloadDeps(m, p)
 	if err != nil {
 		return err
 	}
 
-	err = reloadDeps(runtimeManager, progInfo)
-	if err != nil {
-		return err
-	}
-
-	dc, err := runtimeManager.GetDepChanges()
+	dc, err := m.GetDepChanges()
 	if err != nil {
 		return err
 	}
 
 	if c == nil && dc == nil {
-		fmt.Println("already up to date")
+		// workaround for multiple write events fired
+		// with file watcher
+		if !isWatcher {
+			fmt.Println("Everything up to date")
+		}
 		return nil
 	}
 
 	if c != nil {
 		fmt.Println("Deploying...")
 		_, err = client.Deploy(&api.DeployRequest{
-			ProgramID: progInfo.ID,
+			ProgramID: p.ID,
 			Changes:   c.Changes,
 			Deletions: c.Deletions,
-			Account:   progInfo.Account,
-			Region:    progInfo.Region,
+			Account:   p.Account,
+			Region:    p.Region,
 		})
 		if err != nil {
 			return err
@@ -84,19 +119,19 @@ func deploy(cmd *cobra.Command, args []string) error {
 
 		msg := "Successfully deployed changes"
 		fmt.Println(msg)
-		runtimeManager.StoreState()
+		m.StoreState()
 	}
 
 	if dc != nil {
 		fmt.Println("Updating dependencies...")
-		command := runtime.DepCommands[progInfo.Runtime]
+		command := runtime.DepCommands[p.Runtime]
 		if len(dc.Added) > 0 {
 			installCmd := fmt.Sprintf("%s install", command)
 			for _, a := range dc.Added {
 				installCmd = fmt.Sprintf("%s %s", installCmd, a)
 			}
 			o, err := client.UpdateProgDeps(&api.UpdateProgDepsRequest{
-				ProgramID: progInfo.ID,
+				ProgramID: p.ID,
 				Command:   installCmd,
 			})
 			if err != nil {
@@ -108,20 +143,22 @@ func deploy(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("failed to update dependecies: error on one or more dependencies, no dependencies were added, see output for details")
 			}
 			progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-				ProgramID: progInfo.ID,
+				Program: p.ID,
+				Project: p.Project,
+				Space:   p.Space,
 			})
 			// if can't cet program details, set reload deps to true
 			// so that it reloads the deps from the backend on next iteration
 			if err != nil {
-				progInfo.ReloadDeps = true
+				p.ReloadDeps = true
 				return nil
 			}
 
-			progInfo.Deps = progDetails.Deps
-			runtimeManager.StoreProgInfo(progInfo)
+			p.Deps = progDetails.Deps
+			m.StoreProgInfo(p)
 		}
 		if len(dc.Removed) > 0 {
-			err = reloadDeps(runtimeManager, progInfo)
+			err = reloadDeps(m, p)
 			if err != nil {
 				return err
 			}
@@ -130,7 +167,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 				uninstallCmd = fmt.Sprintf("%s %s", uninstallCmd, d)
 			}
 			o, err := client.UpdateProgDeps(&api.UpdateProgDepsRequest{
-				ProgramID: progInfo.ID,
+				ProgramID: p.ID,
 				Command:   uninstallCmd,
 			})
 			if err != nil {
@@ -142,36 +179,18 @@ func deploy(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("failed to remove dependecies: error on one or more dependencies, no dependencies were removed, see output for details")
 			}
 			progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-				ProgramID: progInfo.ID,
+				Program: p.ID,
+				Project: p.Project,
+				Space:   p.Space,
 			})
 			// if can't get prog details set reload deps to true
 			if err != nil {
-				progInfo.ReloadDeps = true
+				p.ReloadDeps = true
 				return nil
 			}
-			progInfo.Deps = progDetails.Deps
-			runtimeManager.StoreProgInfo(progInfo)
+			p.Deps = progDetails.Deps
+			m.StoreProgInfo(p)
 		}
 	}
-	return nil
-}
-
-// reloadDeps gets program details from the server and updates the prog info deps from prog details
-func reloadDeps(m *runtime.Manager, p *runtime.ProgInfo) error {
-	if !p.ReloadDeps {
-		return nil
-	}
-	progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-		ProgramID: p.ID,
-	})
-	if err != nil {
-		return err
-	}
-	p.Deps = progDetails.Deps
-	err = m.StoreProgInfo(p)
-	if err != nil {
-		return err
-	}
-	p.ReloadDeps = false
 	return nil
 }

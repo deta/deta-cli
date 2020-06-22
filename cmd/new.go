@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,12 +17,12 @@ import (
 var (
 	nodeFlag    bool
 	pythonFlag  bool
-	newProgName string
+	progName    string
 	projectName string
 
 	newCmd = &cobra.Command{
 		Use:   "new [flags] [path]",
-		Short: "Create a new micro",
+		Short: "Create a new Deta Micro",
 		RunE:  new,
 		Args:  cobra.MaximumNArgs(1),
 	}
@@ -31,8 +32,8 @@ func init() {
 	// flags
 	newCmd.Flags().BoolVarP(&nodeFlag, "node", "n", false, "create a micro with node runtime")
 	newCmd.Flags().BoolVarP(&pythonFlag, "python", "p", false, "create a micro with python runtime")
-	newCmd.Flags().StringVar(&newProgName, "name", "", "name of the new micro")
-	newCmd.Flags().StringVar(&projectName, "project", "", "project to create the micro under")
+	newCmd.Flags().StringVar(&progName, "name", "", "deta micro name")
+	newCmd.Flags().StringVar(&projectName, "project", "", "deta project")
 
 	rootCmd.AddCommand(newCmd)
 }
@@ -44,8 +45,6 @@ func new(cmd *cobra.Command, args []string) error {
 
 	var wd string
 	if len(args) == 0 {
-		// if path not provided as args
-		// get current working directory
 		cd, err := os.Getwd()
 		if err != nil {
 			return err
@@ -55,15 +54,38 @@ func new(cmd *cobra.Command, args []string) error {
 		wd = args[0]
 	}
 
-	if newProgName == "" {
-		// use current working dir as the default name of the program
-		// replace spaces with underscore from the dir name if present
-		newProgName = strings.ReplaceAll(filepath.Base(wd), " ", "_")
-	}
-
 	runtimeManager, err := runtime.NewManager(&wd)
 	if err != nil {
 		return err
+	}
+
+	// check if program root dir is empty
+	isEmpty, err := runtimeManager.IsProgDirEmpty()
+	if err != nil {
+		return err
+	}
+
+	progRuntime, err := runtimeManager.GetRuntime()
+	if err != nil {
+		if errors.Is(err, runtime.ErrNoEntrypoint) && !isEmpty {
+			if progName == "" {
+				os.Stderr.WriteString(fmt.Sprintf("No entrypoint file found in '%s'. Please, provide a name or path to create a new micro elsewhere. See `deta new --help`.'\n", wd))
+				return nil
+			}
+			runtimeManager.Clean()
+			wd = filepath.Join(wd, progName)
+			err := os.MkdirAll(wd, 0760)
+			if err != nil {
+				return err
+			}
+			runtimeManager, err = runtime.NewManager(&wd)
+		}
+	}
+
+	if progName == "" {
+		// use current working dir as the default name of the program
+		// replace spaces with underscore from the dir name if present
+		progName = strings.ReplaceAll(filepath.Base(wd), " ", "_")
 	}
 
 	// checks if a program is already present in the working directory
@@ -75,13 +97,10 @@ func new(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("a deta micro already present in '%s'", wd)
 	}
 
-	// check if program root dir is empty
-	isEmpty, err := runtimeManager.IsProgDirEmpty()
+	isEmpty, err = runtimeManager.IsProgDirEmpty()
 	if err != nil {
 		return err
 	}
-
-	var progRuntime string
 	if !isEmpty {
 		progRuntime, err = runtimeManager.GetRuntime()
 		if err != nil {
@@ -121,7 +140,7 @@ func new(cmd *cobra.Command, args []string) error {
 	req := &api.NewProgramRequest{
 		Space:   userInfo.DefaultSpace,
 		Project: project,
-		Name:    newProgName,
+		Name:    progName,
 		Runtime: progRuntime,
 	}
 
@@ -144,6 +163,7 @@ func new(cmd *cobra.Command, args []string) error {
 		Deps:    res.Deps,
 		Envs:    res.Envs,
 		Public:  res.Public,
+		Visor:   res.Visor,
 	}
 	err = runtimeManager.StoreProgInfo(newProgInfo)
 	if err != nil {
@@ -172,7 +192,7 @@ func new(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		// write downloaded files to dir
-		err = runtimeManager.WriteProgramFiles(o.Files, nil)
+		err = runtimeManager.WriteProgramFiles(o.Files, nil, true)
 		if err != nil {
 			return err
 		}
@@ -206,8 +226,7 @@ func new(cmd *cobra.Command, args []string) error {
 	runtimeManager.StoreState()
 
 	if dc != nil {
-		msg = fmt.Sprintf("%s%s", msg, "Adding dependencies...")
-		fmt.Println(msg)
+		fmt.Println("Adding dependencies...")
 		command := runtime.DepCommands[res.Runtime]
 		if len(dc.Added) > 0 {
 			installCmd := fmt.Sprintf("%s install", command)
@@ -228,7 +247,9 @@ func new(cmd *cobra.Command, args []string) error {
 			}
 			// store updated program info
 			progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-				ProgramID: newProgInfo.ID,
+				Program: newProgInfo.ID,
+				Space:   userInfo.DefaultSpace,
+				Project: project,
 			})
 			if err != nil {
 				newProgInfo.ReloadDeps = true

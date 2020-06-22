@@ -36,20 +36,24 @@ var (
 		"main.py":  Python,
 		"index.js": Node,
 	}
+
 	// maps runtimes to dep files
 	depFiles = map[string]string{
 		Python: "requirements.txt",
 		Node:   "package.json",
 	}
-	// skipDirs maps runtimes to dirs that should be skipped
+
+	// skipPaths maps runtimes to paths that should be skipped
 	skipPaths = map[string][]*regexp.Regexp{
 		Python: []*regexp.Regexp{
 			regexp.MustCompile(".*\\.pyc"),
 			regexp.MustCompile(".*\\.rst"),
 			regexp.MustCompile("__pycache__"),
+			regexp.MustCompile(".*~$"), // vim swap files
 		},
 		Node: []*regexp.Regexp{
 			regexp.MustCompile("node_modules"),
+			regexp.MustCompile(".*~$"), // vim swap files
 		},
 	}
 
@@ -64,6 +68,11 @@ var (
 		Python: "pip",
 		Node:   "npm",
 	}
+
+	// ErrNoEntrypoint noe entrypoint file present
+	ErrNoEntrypoint = errors.New("no entrypoint file present")
+	// ErrEntrypointConflict conflicting entrypoint files
+	ErrEntrypointConflict = errors.New("conflicting entrypoint files present")
 )
 
 // Manager runtime manager handles files management and other services
@@ -224,7 +233,7 @@ func (m *Manager) GetRuntime() (string, error) {
 		return "", err
 	}
 	if !found {
-		return "", fmt.Errorf("No supported runtime found in %s", m.rootDir)
+		return "", ErrNoEntrypoint
 	}
 	return runtime, nil
 }
@@ -315,7 +324,7 @@ func (m *Manager) StoreState() error {
 			return nil
 		}
 
-		hashSum, err := m.calcChecksum(path)
+		hashSum, err := m.calcChecksum(filepath.Join(m.rootDir, path))
 		if err != nil {
 			return err
 		}
@@ -385,7 +394,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 			return nil
 		}
 
-		f, err := os.Open(path)
+		f, err := os.Open(filepath.Join(m.rootDir, path))
 		if err != nil {
 			return err
 		}
@@ -671,16 +680,24 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 	return &ec, nil
 }
 
-// WriteProgramFiles writes program files to target dir
-func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string) error {
-	writeDir := m.rootDir
-	// use root dir as dir to store if targetDir is not provided
-	if targetDir != nil && *targetDir != writeDir {
-		writeDir = filepath.Join(m.rootDir, *targetDir)
-		err := os.MkdirAll(writeDir, dirPermMode)
-		if err != nil {
-			return err
+// WriteProgramFiles writes program files to target dir, target dir is relative to root dir if relative is true
+func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string, relative bool) error {
+	var writeDir string
+	if relative {
+		writeDir = m.rootDir
+		// use root dir as dir to store if targetDir is not provided
+		if targetDir != nil && *targetDir != writeDir {
+			writeDir = filepath.Join(m.rootDir, *targetDir)
+			err := os.MkdirAll(writeDir, dirPermMode)
+			if err != nil {
+				return err
+			}
 		}
+	} else {
+		if targetDir == nil {
+			return fmt.Errorf("target dir not provided")
+		}
+		writeDir = *targetDir
 	}
 
 	// need to create dirs first before writing the files
@@ -707,4 +724,9 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 		}
 	}
 	return nil
+}
+
+// Clean removes files creatd by the rutime manager
+func (m *Manager) Clean() error {
+	return os.RemoveAll(m.detaPath)
 }

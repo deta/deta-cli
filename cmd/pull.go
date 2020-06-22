@@ -13,7 +13,7 @@ import (
 
 var (
 	pullCmd = &cobra.Command{
-		Use:   "pull [path_to_pull_to]",
+		Use:   "pull [flags] [path]",
 		Short: "Pull the lastest deployed code of a deta micro",
 		RunE:  pull,
 		Args:  cobra.MaximumNArgs(1),
@@ -21,6 +21,10 @@ var (
 )
 
 func init() {
+	pullCmd.Flags().StringVar(&progName, "name", "", "deta micro name")
+	pullCmd.Flags().StringVar(&projectName, "project", "", "deta project")
+	pullCmd.MarkFlagRequired("name")
+
 	rootCmd.AddCommand(pullCmd)
 }
 
@@ -29,8 +33,35 @@ func pull(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if len(args) > 0 {
+		wd = args[0]
+	}
 
-	runtimeManager, err := runtime.NewManager(&wd)
+	pullPath := filepath.Join(wd, progName)
+	i, err := os.Stat(wd)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = os.MkdirAll(pullPath, 0760)
+			if err != nil {
+				return err
+			}
+		}
+		return err
+	}
+	if !i.IsDir() {
+		return fmt.Errorf("'%s' is not a directory", wd)
+	}
+	if _, err := os.Stat(pullPath); err == nil {
+		fmt.Println(fmt.Sprintf("'%s' already exists. Files already present may be overwritten. Continue? [y/n]", pullPath))
+		var cont string
+		fmt.Scanf("%s", &cont)
+		if strings.ToLower(cont) != "y" {
+			fmt.Println("Pull aborted")
+			return nil
+		}
+	}
+
+	runtimeManager, err := runtime.NewManager(&pullPath)
 	if err != nil {
 		return err
 	}
@@ -40,29 +71,45 @@ func pull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if !isInitialized {
-		return fmt.Errorf("no deta micro initialized in '%s'", wd)
+	if isInitialized {
+		return fmt.Errorf(fmt.Sprintf("another deta micro already present in '%s'", wd))
 	}
 
-	progInfo, err := runtimeManager.GetProgInfo()
+	u, err := runtimeManager.GetUserInfo()
 	if err != nil {
 		return err
 	}
 
-	pullPath := fmt.Sprintf("%s", progInfo.Name)
-	if len(args) != 0 {
-		pullPath = filepath.Join(args[0], pullPath)
+	if u == nil {
+		fmt.Println("Login required. Please, log in with `deta login`")
+		return nil
 	}
 
-	_, err = os.Stat(pullPath)
-	if err == nil {
-		fmt.Println(fmt.Sprintf("'%s' already exists. Files already present may be overwritten. Continue? [y/n]", pullPath))
-		var cont string
-		fmt.Scanf("%s", &cont)
-		if strings.ToLower(cont) != "y" {
-			fmt.Println("Pull aborted")
-			return nil
-		}
+	if projectName == "" {
+		projectName = u.DefaultProject
+	}
+
+	progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
+		Program: progName,
+		Project: projectName,
+		Space:   u.DefaultSpace,
+	})
+	if err != nil {
+		return err
+	}
+
+	progInfo := &runtime.ProgInfo{
+		ID:      progDetails.ID,
+		Space:   progDetails.Space,
+		Runtime: progDetails.Runtime,
+		Name:    progDetails.Name,
+		Path:    progDetails.Path,
+		Project: progDetails.Project,
+		Account: progDetails.Account,
+		Region:  progDetails.Region,
+		Deps:    progDetails.Deps,
+		Envs:    progDetails.Envs,
+		Public:  progDetails.Public,
 	}
 
 	o, err := client.DownloadProgram(&api.DownloadProgramRequest{
@@ -76,11 +123,14 @@ func pull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = runtimeManager.WriteProgramFiles(o.Files, &pullPath)
+	err = runtimeManager.WriteProgramFiles(o.Files, &pullPath, false)
 	if err != nil {
 		return err
 	}
-
+	err = runtimeManager.StoreProgInfo(progInfo)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fmt.Sprintf("Successfully pulled latest deployed code to '%s'", pullPath))
 	return nil
 }
