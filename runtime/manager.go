@@ -682,7 +682,7 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 
 // WriteProgramFiles writes program files to target dir, target dir is relative to root dir if relative is true
 func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string, relative bool) error {
-	writeDir := *targetDir
+	var writeDir string
 	if relative {
 		writeDir := m.rootDir
 		// use root dir as dir to store if targetDir is not provided
@@ -693,6 +693,11 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 				return err
 			}
 		}
+	} else {
+		if targetDir == nil {
+			return fmt.Errorf("target dir not provided")
+		}
+		writeDir = *targetDir
 	}
 
 	// need to create dirs first before writing the files
