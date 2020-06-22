@@ -3,7 +3,7 @@
 package runtime
 
 import (
-	"filepath"
+	"path/filepath"
 
 	"golang.org/x/sys/windows"
 )

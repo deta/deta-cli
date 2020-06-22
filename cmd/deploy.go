@@ -11,7 +11,7 @@ import (
 var (
 	deployCmd = &cobra.Command{
 		Use:   "deploy",
-		Short: "Deploy a Deta Micro",
+		Short: "Deploy a deta micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  deploy,
 	}

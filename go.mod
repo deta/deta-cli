@@ -3,18 +3,8 @@ module github.com/deta/deta-cli
 go 1.13
 
 require (
-	github.com/aws/aws-sdk-go v1.31.14
-	github.com/deta/deta-cli/auth v0.0.0-00010101000000-000000000000
-	github.com/deta/deta-cli/cmd v0.0.0-00010101000000-000000000000
-	github.com/deta/deta-cli/runtime v0.0.0-00010101000000-000000000000
+	github.com/aws/aws-sdk-go v1.32.6
+	github.com/rjeczalik/notify v0.9.2
 	github.com/spf13/cobra v1.0.0
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	golang.org/x/sys v0.0.0-20200620081246-981b61492c35
 )
-
-replace github.com/deta/deta-cli/cmd => ./cmd
-
-replace github.com/deta/deta-cli/auth => ./auth
-
-replace github.com/deta/deta-cli/api => ./api
-
-replace github.com/deta/deta-cli/runtime => ./runtime
