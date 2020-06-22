@@ -13,7 +13,7 @@ import (
 
 var (
 	pullCmd = &cobra.Command{
-		Use:   "pull [path_to_pull_to]",
+		Use:   "pull [flags] [path]",
 		Short: "Pull the lastest deployed code of a deta micro",
 		RunE:  pull,
 		Args:  cobra.MaximumNArgs(1),
@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	newCmd.Flags().StringVarP(&progName, "n", "name", "", "name of the micro")
-	newCmd.Flags().StringVarP(&projectName, "p", "project", "default", "project of the micro")
-	newCmd.MarkFlagRequired("name")
+	pullCmd.Flags().StringVar(&progName, "name", "", "deta micro name")
+	pullCmd.Flags().StringVar(&projectName, "project", "", "deta project")
+	pullCmd.MarkFlagRequired("name")
 
 	rootCmd.AddCommand(pullCmd)
 }
@@ -61,7 +61,7 @@ func pull(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	runtimeManager, err := runtime.NewManager(&wd)
+	runtimeManager, err := runtime.NewManager(&pullPath)
 	if err != nil {
 		return err
 	}
@@ -83,6 +83,10 @@ func pull(cmd *cobra.Command, args []string) error {
 	if u == nil {
 		fmt.Println("Login required. Please, log in with `deta login`")
 		return nil
+	}
+
+	if projectName == "" {
+		projectName = u.DefaultProject
 	}
 
 	progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
@@ -108,11 +112,6 @@ func pull(cmd *cobra.Command, args []string) error {
 		Public:  progDetails.Public,
 	}
 
-	runtimeManager, err = runtime.NewManager(&wd)
-	if err != nil {
-		return err
-	}
-
 	o, err := client.DownloadProgram(&api.DownloadProgramRequest{
 		ProgramID: progInfo.ID,
 		Runtime:   progInfo.Runtime,
@@ -124,11 +123,14 @@ func pull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = runtimeManager.WriteProgramFiles(o.Files, &pullPath)
+	err = runtimeManager.WriteProgramFiles(o.Files, &pullPath, false)
 	if err != nil {
 		return err
 	}
-	runtimeManager.StoreProgInfo(progInfo)
+	err = runtimeManager.StoreProgInfo(progInfo)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(fmt.Sprintf("Successfully pulled latest deployed code to '%s'", pullPath))
 	return nil
 }

@@ -680,15 +680,18 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 	return &ec, nil
 }
 
-// WriteProgramFiles writes program files to target dir
-func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string) error {
-	writeDir := m.rootDir
-	// use root dir as dir to store if targetDir is not provided
-	if targetDir != nil && *targetDir != writeDir {
-		writeDir = filepath.Join(m.rootDir, *targetDir)
-		err := os.MkdirAll(writeDir, dirPermMode)
-		if err != nil {
-			return err
+// WriteProgramFiles writes program files to target dir, target dir is relative to root dir if relative is true
+func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string, relative bool) error {
+	writeDir := *targetDir
+	if relative {
+		writeDir := m.rootDir
+		// use root dir as dir to store if targetDir is not provided
+		if targetDir != nil && *targetDir != writeDir {
+			writeDir = filepath.Join(m.rootDir, *targetDir)
+			err := os.MkdirAll(writeDir, dirPermMode)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
