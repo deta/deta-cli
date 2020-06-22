@@ -44,8 +44,9 @@ func progInfoFromBytes(data []byte) (*ProgInfo, error) {
 
 // UserInfo user info
 type UserInfo struct {
-	DefaultSpace   int64  `json:"default_space"`
-	DefaultProject string `json:"default_project"`
+	DefaultSpace     int64  `json:"default_space"`
+	DefaultSpaceName string `json:"default_space_name"`
+	DefaultProject   string `json:"default_project"`
 }
 
 // unmarshals data into a UserInfo

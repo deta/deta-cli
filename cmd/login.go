@@ -34,8 +34,9 @@ func login(cmd *cobra.Command, args []string) error {
 	}
 
 	u := &runtime.UserInfo{
-		DefaultSpace:   resp[0].SpaceID,
-		DefaultProject: runtime.DefaultProject,
+		DefaultSpace:     resp[0].SpaceID,
+		DefaultSpaceName: resp[0].Name,
+		DefaultProject:   runtime.DefaultProject,
 	}
 
 	err = runtimeManager.StoreUserInfo(u)
