@@ -45,8 +45,6 @@ func new(cmd *cobra.Command, args []string) error {
 
 	var wd string
 	if len(args) == 0 {
-		// if path not provided as args
-		// get current working directory
 		cd, err := os.Getwd()
 		if err != nil {
 			return err
@@ -165,6 +163,7 @@ func new(cmd *cobra.Command, args []string) error {
 		Deps:    res.Deps,
 		Envs:    res.Envs,
 		Public:  res.Public,
+		Visor:   res.Visor,
 	}
 	err = runtimeManager.StoreProgInfo(newProgInfo)
 	if err != nil {

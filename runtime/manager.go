@@ -684,7 +684,7 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string, relative bool) error {
 	var writeDir string
 	if relative {
-		writeDir := m.rootDir
+		writeDir = m.rootDir
 		// use root dir as dir to store if targetDir is not provided
 		if targetDir != nil && *targetDir != writeDir {
 			writeDir = filepath.Join(m.rootDir, *targetDir)
