@@ -91,7 +91,7 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 		tokens, err := authManager.GetTokens()
 		if err != nil {
 			if os.IsNotExist(err) || errors.Is(err, auth.ErrRefreshTokenInvalid) {
-				return nil, fmt.Errorf("requires login")
+				return nil, fmt.Errorf("login required")
 			}
 			return nil, fmt.Errorf("failed to authorize")
 		}

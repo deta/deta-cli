@@ -593,7 +593,9 @@ func (c *DetaClient) GetProjects(req *GetProjectsRequest) ([]GetProjectsResponse
 
 // GetProgDetailsRequest request to get program details
 type GetProgDetailsRequest struct {
-	ProgramID string
+	Program string
+	Project string
+	Space   int64
 }
 
 // GetProgDetailsResponse response to get program details
@@ -615,7 +617,7 @@ type GetProgDetailsResponse struct {
 // GetProgDetails get program details
 func (c *DetaClient) GetProgDetails(req *GetProgDetailsRequest) (*GetProgDetailsResponse, error) {
 	i := &requestInput{
-		Path:      fmt.Sprintf("/programs/%s", req.ProgramID),
+		Path:      fmt.Sprintf("/spaces/%d/projects/%s/programs/%s", req.Space, req.Project, req.Program),
 		Method:    "GET",
 		NeedsAuth: true,
 	}

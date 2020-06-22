@@ -11,7 +11,7 @@ import (
 var (
 	deployCmd = &cobra.Command{
 		Use:   "deploy",
-		Short: "Deploy a deta micro",
+		Short: "Deploy a Deta Micro",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  deploy,
 	}
@@ -62,7 +62,9 @@ func reloadDeps(m *runtime.Manager, p *runtime.ProgInfo) error {
 		return nil
 	}
 	progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-		ProgramID: p.ID,
+		Program: p.ID,
+		Project: p.Project,
+		Space:   p.Space,
 	})
 	if err != nil {
 		return err
@@ -141,7 +143,9 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 				return fmt.Errorf("failed to update dependecies: error on one or more dependencies, no dependencies were added, see output for details")
 			}
 			progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-				ProgramID: p.ID,
+				Program: p.ID,
+				Project: p.Project,
+				Space:   p.Space,
 			})
 			// if can't cet program details, set reload deps to true
 			// so that it reloads the deps from the backend on next iteration
@@ -175,7 +179,9 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 				return fmt.Errorf("failed to remove dependecies: error on one or more dependencies, no dependencies were removed, see output for details")
 			}
 			progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-				ProgramID: p.ID,
+				Program: p.ID,
+				Project: p.Project,
+				Space:   p.Space,
 			})
 			// if can't get prog details set reload deps to true
 			if err != nil {

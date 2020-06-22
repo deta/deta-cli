@@ -17,12 +17,12 @@ import (
 var (
 	nodeFlag    bool
 	pythonFlag  bool
-	newProgName string
+	progName    string
 	projectName string
 
 	newCmd = &cobra.Command{
 		Use:   "new [flags] [path]",
-		Short: "Create a new micro",
+		Short: "Create a new Deta Micro",
 		RunE:  new,
 		Args:  cobra.MaximumNArgs(1),
 	}
@@ -32,7 +32,7 @@ func init() {
 	// flags
 	newCmd.Flags().BoolVarP(&nodeFlag, "node", "n", false, "create a micro with node runtime")
 	newCmd.Flags().BoolVarP(&pythonFlag, "python", "p", false, "create a micro with python runtime")
-	newCmd.Flags().StringVar(&newProgName, "name", "", "name of the new micro")
+	newCmd.Flags().StringVar(&progName, "name", "", "name of the new micro")
 	newCmd.Flags().StringVar(&projectName, "project", "", "project to create the micro under")
 
 	rootCmd.AddCommand(newCmd)
@@ -70,12 +70,12 @@ func new(cmd *cobra.Command, args []string) error {
 	progRuntime, err := runtimeManager.GetRuntime()
 	if err != nil {
 		if errors.Is(err, runtime.ErrNoEntrypoint) && !isEmpty {
-			if newProgName == "" {
+			if progName == "" {
 				os.Stderr.WriteString(fmt.Sprintf("No entrypoint file found in '%s'. Please, provide a name or path to create a new micro elsewhere. See `deta new --help`.'\n", wd))
 				return nil
 			}
 			runtimeManager.Clean()
-			wd = filepath.Join(wd, newProgName)
+			wd = filepath.Join(wd, progName)
 			err := os.MkdirAll(wd, 0760)
 			if err != nil {
 				return err
@@ -84,10 +84,10 @@ func new(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if newProgName == "" {
+	if progName == "" {
 		// use current working dir as the default name of the program
 		// replace spaces with underscore from the dir name if present
-		newProgName = strings.ReplaceAll(filepath.Base(wd), " ", "_")
+		progName = strings.ReplaceAll(filepath.Base(wd), " ", "_")
 	}
 
 	// checks if a program is already present in the working directory
@@ -142,7 +142,7 @@ func new(cmd *cobra.Command, args []string) error {
 	req := &api.NewProgramRequest{
 		Space:   userInfo.DefaultSpace,
 		Project: project,
-		Name:    newProgName,
+		Name:    progName,
 		Runtime: progRuntime,
 	}
 
@@ -249,7 +249,9 @@ func new(cmd *cobra.Command, args []string) error {
 			}
 			// store updated program info
 			progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-				ProgramID: newProgInfo.ID,
+				Program: newProgInfo.ID,
+				Space:   userInfo.DefaultSpace,
+				Project: project,
 			})
 			if err != nil {
 				newProgInfo.ReloadDeps = true
