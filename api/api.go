@@ -555,16 +555,20 @@ type GetProjectsRequest struct {
 	SpaceID int64
 }
 
-// GetProjectsResponse response to get projects request
-type GetProjectsResponse struct {
-	ID          string `json:"id"`
+// GetProjectsItem an item in get projects response
+type GetProjectsItem struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Created     string `json:"created"`
 }
 
+// GetProjectsResponse response to get projects request
+type GetProjectsResponse struct {
+	Projects []GetProjectsItem `json:"projects"`
+}
+
 // GetProjects gets projects
-func (c *DetaClient) GetProjects(req *GetProjectsRequest) ([]GetProjectsResponse, error) {
+func (c *DetaClient) GetProjects(req *GetProjectsRequest) (*GetProjectsResponse, error) {
 	i := &requestInput{
 		Path:      fmt.Sprintf("/spaces/%d/projects", req.SpaceID),
 		Method:    "GET",
@@ -583,12 +587,12 @@ func (c *DetaClient) GetProjects(req *GetProjectsRequest) ([]GetProjectsResponse
 		return nil, fmt.Errorf("failed to get projects: %v", msg)
 	}
 
-	var resp []GetProjectsResponse
+	var resp GetProjectsResponse
 	err = json.Unmarshal(o.Body, &resp)
 	if err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return &resp, nil
 }
 
 // GetProgDetailsRequest request to get program details

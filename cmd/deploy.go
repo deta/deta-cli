@@ -28,9 +28,9 @@ func deploy(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		// new manager sets curent working directory as root directory
 		// if root is not provided
-		runtimeManager, err = runtime.NewManager(nil)
+		runtimeManager, err = runtime.NewManager(nil, false)
 	} else {
-		runtimeManager, err = runtime.NewManager(&args[0])
+		runtimeManager, err = runtime.NewManager(&args[0], false)
 	}
 	if err != nil {
 		return err

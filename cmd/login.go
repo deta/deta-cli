@@ -28,7 +28,7 @@ func login(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	runtimeManager, err := runtime.NewManager(nil)
+	runtimeManager, err := runtime.NewManager(nil, false)
 	if err != nil {
 		return err
 	}

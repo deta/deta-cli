@@ -42,7 +42,7 @@ func update(cmd *cobra.Command, args []string) error {
 		wd = args[0]
 	}
 
-	runtimeManager, err := runtime.NewManager(&wd)
+	runtimeManager, err := runtime.NewManager(&wd, false)
 	if err != nil {
 		return err
 	}

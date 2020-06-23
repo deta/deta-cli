@@ -61,7 +61,7 @@ func pull(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	runtimeManager, err := runtime.NewManager(&pullPath)
+	runtimeManager, err := runtime.NewManager(&pullPath, true)
 	if err != nil {
 		return err
 	}

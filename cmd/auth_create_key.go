@@ -41,7 +41,7 @@ func createAPIKey(cmd *cobra.Command, args []string) error {
 	if len(args) != 0 {
 		wd = args[0]
 	}
-	runtimeManager, err := runtime.NewManager(&wd)
+	runtimeManager, err := runtime.NewManager(&wd, false)
 	if err != nil {
 		return nil
 	}

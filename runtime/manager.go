@@ -85,7 +85,8 @@ type Manager struct {
 }
 
 // NewManager returns a new runtime manager for the root dir of the program
-func NewManager(root *string) (*Manager, error) {
+// if initDirs is true, it creates dirs under root
+func NewManager(root *string, initDirs bool) (*Manager, error) {
 	var rootDir string
 	if root != nil {
 		rootDir = *root
@@ -98,9 +99,12 @@ func NewManager(root *string) (*Manager, error) {
 	}
 
 	detaPath := filepath.Join(rootDir, detaDir)
-	err := os.MkdirAll(detaPath, dirPermMode)
-	if err != nil {
-		return nil, err
+
+	if initDirs {
+		err := os.MkdirAll(detaPath, dirPermMode)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// user info is stored in ~/.deta/userInfo as it's global
