@@ -1,5 +1,5 @@
 GO_VERSION = 1.13
-DETA_VERSION = DEV
+DETA_VERSION = 1.0
 PLATFORM = linux/amd64
 
 LDFLAGS := -X github.com/deta/deta-cli/cmd.detaVersion=$(DETA_VERSION) $(LDFLAGS)

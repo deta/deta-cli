@@ -41,7 +41,7 @@ func createAPIKey(cmd *cobra.Command, args []string) error {
 	if len(args) != 0 {
 		wd = args[0]
 	}
-	runtimeManager, err := runtime.NewManager(&wd)
+	runtimeManager, err := runtime.NewManager(&wd, false)
 	if err != nil {
 		return nil
 	}
@@ -52,7 +52,7 @@ func createAPIKey(cmd *cobra.Command, args []string) error {
 	}
 
 	if !isInitialized {
-		return fmt.Errorf("No deta micro initialized in '%s'", wd)
+		return fmt.Errorf("no deta micro initialized in '%s'", wd)
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()
@@ -78,7 +78,7 @@ func createAPIKey(cmd *cobra.Command, args []string) error {
 
 	prettyOutput, err := prettyPrint(o)
 	if err != nil {
-		return fmt.Errorf("failed to print key. Please, report the bug to us")
+		return fmt.Errorf("failed to print the key")
 	}
 	fmt.Println(prettyOutput)
 

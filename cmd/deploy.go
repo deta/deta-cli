@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/deta/deta-cli/api"
 	"github.com/deta/deta-cli/runtime"
@@ -22,19 +23,14 @@ func init() {
 }
 
 func deploy(cmd *cobra.Command, args []string) error {
-	var err error
-	var runtimeManager *runtime.Manager
-
-	if len(args) == 0 {
-		// new manager sets curent working directory as root directory
-		// if root is not provided
-		runtimeManager, err = runtime.NewManager(nil)
-	} else {
-		runtimeManager, err = runtime.NewManager(&args[0])
-	}
+	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
+	if len(args) > 0 {
+		wd = args[0]
+	}
+	runtimeManager, err := runtime.NewManager(&wd, false)
 
 	isInitialized, err := runtimeManager.IsInitialized()
 	if err != nil {
@@ -81,7 +77,6 @@ func reloadDeps(m *runtime.Manager, p *runtime.ProgInfo) error {
 func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) error {
 	c, err := m.GetChanges()
 	if err != nil {
-		fmt.Println("get changes err:", err)
 		return err
 	}
 

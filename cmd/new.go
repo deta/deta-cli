@@ -22,7 +22,7 @@ var (
 
 	newCmd = &cobra.Command{
 		Use:   "new [flags] [path]",
-		Short: "Create a new Deta Micro",
+		Short: "Create a new deta micro",
 		RunE:  new,
 		Args:  cobra.MaximumNArgs(1),
 	}
@@ -54,7 +54,7 @@ func new(cmd *cobra.Command, args []string) error {
 		wd = args[0]
 	}
 
-	runtimeManager, err := runtime.NewManager(&wd)
+	runtimeManager, err := runtime.NewManager(&wd, true)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func new(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			runtimeManager, err = runtime.NewManager(&wd)
+			runtimeManager, err = runtime.NewManager(&wd, true)
 		}
 	}
 

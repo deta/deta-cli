@@ -11,7 +11,7 @@ import (
 
 var (
 	authCmd = &cobra.Command{
-		Use:   "auth [command]",
+		Use:   "auth",
 		Short: "Change auth settings for a deta micro",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -32,7 +32,7 @@ func updateAuth(value bool, args []string) error {
 	if len(args) != 0 {
 		wd = args[0]
 	}
-	runtimeManager, err := runtime.NewManager(&wd)
+	runtimeManager, err := runtime.NewManager(&wd, false)
 	if err != nil {
 		return err
 	}

@@ -42,14 +42,14 @@ func update(cmd *cobra.Command, args []string) error {
 		wd = args[0]
 	}
 
-	runtimeManager, err := runtime.NewManager(&wd)
+	runtimeManager, err := runtime.NewManager(&wd, false)
 	if err != nil {
 		return err
 	}
 
 	isInitialized, err := runtimeManager.IsInitialized()
 	if !isInitialized {
-		return fmt.Errorf("No deta micro initialized in `%s'", wd)
+		return fmt.Errorf("no deta micro initialized in `%s'", wd)
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()
@@ -64,7 +64,7 @@ func update(cmd *cobra.Command, args []string) error {
 			Name:      progName,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to update micro: %v", err)
+			return err
 		}
 		progInfo.Name = progName
 		runtimeManager.StoreProgInfo(progInfo)

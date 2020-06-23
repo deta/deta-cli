@@ -20,6 +20,7 @@ func init() {
 }
 
 func login(cmd *cobra.Command, args []string) error {
+	fmt.Println("Please, log in from the web page. Waiting..")
 	if err := authManager.Login(); err != nil {
 		return err
 	}
@@ -28,7 +29,7 @@ func login(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	runtimeManager, err := runtime.NewManager(nil)
+	runtimeManager, err := runtime.NewManager(nil, false)
 	if err != nil {
 		return err
 	}
