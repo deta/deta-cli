@@ -32,7 +32,7 @@ type DetaClient struct {
 
 // NewDetaClient new client to talk with the deta api
 func NewDetaClient() *DetaClient {
-	var e string
+	e := rootEndpoint
 	if version == "DEV" {
 		fmt.Println("Development mode")
 		e = os.Getenv("DEV_ENDPOINT")
@@ -40,9 +40,8 @@ func NewDetaClient() *DetaClient {
 			os.Stderr.WriteString("Env DEV_ENDPOINT not set\n")
 			os.Exit(1)
 		}
-	} else {
-		e = rootEndpoint
 	}
+
 	return &DetaClient{
 		rootEndpoint: e,
 		client:       &http.Client{},
