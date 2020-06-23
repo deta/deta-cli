@@ -12,9 +12,19 @@ LDFLAGS := -X github.com/deta/deta-cli/cmd.gatewayDomain=$(GATEWAY_DOMAIN) $(LDF
 
 .PHONY: build clean
 
-build:
+build-linux:
 	go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(LINUX_PLATFORM)" -o build/deta	
-	cd build && rm deta-$(LINUX_PLATFORM).zip && zip deta-$(LINUX_PLATFORM).zip deta
+	cd build && zip -FSr deta-$(LINUX_PLATFORM).zip deta
+
+build-win:
+	GOOS=windows GOARCH=amd64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(WINDOWS_PLATFORM)" -o build/deta	
+	cd build && zip -FSr deta-$(WINDOWS_PLATFORM).zip deta
+
+build-mac:
+	GOOS=darwin GOARCH=amd64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(MAC_PLATFORM)" -o build/deta	
+	cd build && zip -FSr deta-$(MAC_PLATFORM).zip deta
+
+build: build-linux build-win build-mac
 
 clean:
 	rm -rf build

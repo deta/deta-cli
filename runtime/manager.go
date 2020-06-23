@@ -50,10 +50,12 @@ var (
 			regexp.MustCompile(".*\\.rst"),
 			regexp.MustCompile("__pycache__"),
 			regexp.MustCompile(".*~$"), // vim swap files
+			regexp.MustCompile(".*\\.deta"),
 		},
 		Node: []*regexp.Regexp{
 			regexp.MustCompile("node_modules"),
 			regexp.MustCompile(".*~$"), // vim swap files
+			regexp.MustCompile(".*\\.deta"),
 		},
 	}
 
@@ -247,8 +249,7 @@ func (m *Manager) isHidden(path string) (bool, error) {
 	_, filename := filepath.Split(path)
 	switch runtime.GOOS {
 	case "windows":
-		// TODO: implement for windows
-		return false, fmt.Errorf("Not implemented")
+		return isHiddenWindows(path)
 	default:
 		return strings.HasPrefix(filename, ".") && filename != ".", nil
 	}
@@ -408,7 +409,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 		if err != nil {
 			return err
 		}
-		sc.Changes[path] = string(contents)
+		sc.Changes[filepath.ToSlash(path)] = string(contents)
 		return nil
 	})
 	if err != nil {
@@ -466,7 +467,7 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		}
 
 		// update deletions
-		if _, ok := deletions[path]; ok {
+		if _, ok := deletions[filepath.ToSlash(path)]; ok {
 			delete(deletions, path)
 		}
 
@@ -475,12 +476,12 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 			return err
 		}
 
-		if storedState[path] != checksum {
+		if storedState[filepath.ToSlash(path)] != checksum {
 			contents, err := m.readFile(filepath.Join(m.rootDir, path))
 			if err != nil {
 				return err
 			}
-			sc.Changes[path] = string(contents)
+			sc.Changes[filepath.ToSlash(path)] = string(contents)
 		}
 		return nil
 	})
