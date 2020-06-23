@@ -43,7 +43,7 @@ func watch(cmd *cobra.Command, args []string) error {
 	}
 
 	if !isInitialized {
-		return fmt.Errorf("deta micro not initilialized. see `deta new --help` to create a micro")
+		return fmt.Errorf(fmt.Sprintf("no deta micro initilialized in '%s'. see `deta new --help`", wd))
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()

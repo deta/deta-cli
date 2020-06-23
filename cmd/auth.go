@@ -11,7 +11,7 @@ import (
 
 var (
 	authCmd = &cobra.Command{
-		Use:   "auth [command]",
+		Use:   "auth",
 		Short: "Change auth settings for a deta micro",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {

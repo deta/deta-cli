@@ -238,7 +238,6 @@ func (m *Manager) Login() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Please, log in from the web page. Waiting..")
 	err = m.openLoginPage()
 	if err != nil {
 		return err

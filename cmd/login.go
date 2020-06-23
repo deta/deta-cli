@@ -20,6 +20,7 @@ func init() {
 }
 
 func login(cmd *cobra.Command, args []string) error {
+	fmt.Println("Please, log in from the web page. Waiting..")
 	if err := authManager.Login(); err != nil {
 		return err
 	}

@@ -33,7 +33,7 @@ func listProjects(cmd *cobra.Command, args []string) error {
 	}
 
 	if u == nil {
-		return fmt.Errorf("login required")
+		return fmt.Errorf("login required, login in `deta login`")
 	}
 
 	res, err := client.GetProjects(&api.GetProjectsRequest{

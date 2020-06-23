@@ -81,7 +81,7 @@ func pull(cmd *cobra.Command, args []string) error {
 	}
 
 	if u == nil {
-		fmt.Println("Login required. Please, log in with `deta login`")
+		fmt.Println("login required, log in with `deta login`")
 		return nil
 	}
 

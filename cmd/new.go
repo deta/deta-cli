@@ -22,7 +22,7 @@ var (
 
 	newCmd = &cobra.Command{
 		Use:   "new [flags] [path]",
-		Short: "Create a new Deta Micro",
+		Short: "Create a new deta micro",
 		RunE:  new,
 		Args:  cobra.MaximumNArgs(1),
 	}
