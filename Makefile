@@ -17,8 +17,8 @@ build-linux:
 	cd build && zip -FSr deta-$(LINUX_PLATFORM).zip deta
 
 build-win:
-	GOOS=windows GOARCH=amd64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(WINDOWS_PLATFORM)" -o build/deta	
-	cd build && zip -FSr deta-$(WINDOWS_PLATFORM).zip deta
+	GOOS=windows GOARCH=amd64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(WINDOWS_PLATFORM)" -o build/deta.exe	
+	cd build && zip -FSr deta-$(WINDOWS_PLATFORM).zip deta.exe
 
 build-mac:
 	GOOS=darwin GOARCH=amd64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(MAC_PLATFORM)" -o build/deta	
