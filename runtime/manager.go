@@ -193,11 +193,14 @@ func (m *Manager) IsProgDirEmpty() (bool, error) {
 	}
 	defer f.Close()
 	names, err := f.Readdirnames(-1)
-	if err == io.EOF {
-		return true, nil
+	if err != nil {
+		if err == io.EOF{
+			return true, nil
+		}
+		return false, err
 	}
 	for _, n := range names {
-		isHidden, err := m.isHidden(n)
+		isHidden, err := m.isHidden(filepath.Join(checkDir, n))
 		if err != nil {
 			return false, err
 		}
@@ -246,11 +249,11 @@ func (m *Manager) GetRuntime() (string, error) {
 
 // if a file or dir is hidden
 func (m *Manager) isHidden(path string) (bool, error) {
-	_, filename := filepath.Split(path)
 	switch runtime.GOOS {
 	case "windows":
 		return isHiddenWindows(path)
 	default:
+		_, filename := filepath.Split(path)
 		return strings.HasPrefix(filename, ".") && filename != ".", nil
 	}
 }
@@ -522,7 +525,7 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 	}
 	switch runtime {
 	case Python:
-		lines := strings.Split(string(contents), "\n")
+		lines := strings.Split(string(contents), NewLine)
 		var deps []string
 		for _, l := range lines {
 			l = strings.ReplaceAll(l, " ", "")
@@ -618,7 +621,7 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 	if len(contents) == 0 {
 		return nil, nil
 	}
-	lines := strings.Split(string(contents), "\n")
+	lines := strings.Split(string(contents), NewLine)
 	// expect format KEY=VALUE
 	envs := make(map[string]string)
 	for _, l := range lines {
@@ -733,5 +736,12 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 
 // Clean removes files creatd by the rutime manager
 func (m *Manager) Clean() error {
-	return os.RemoveAll(m.detaPath)
+	isInitialized, err := m.IsInitialized()
+	if err != nil{
+		return err
+	}
+	if !isInitialized{
+		return os.RemoveAll(m.detaPath)
+	}
+	return nil
 }
