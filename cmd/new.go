@@ -66,14 +66,11 @@ func new(cmd *cobra.Command, args []string) error {
 	}
 
 	progRuntime, err := runtimeManager.GetRuntime()
-	if err != nil && errors.Is(err, runtime.ErrNoEntrypoint) {
-		if !isEmpty {
+	if err != nil {
+		if errors.Is(err, runtime.ErrNoEntrypoint) && !isEmpty {
 			if progName == "" {
 				os.Stderr.WriteString(fmt.Sprintf("No entrypoint file found in '%s'. Please, provide a name or path to create a new micro elsewhere. See `deta new --help`.'\n", wd))
 				return nil
-			}
-			if err != nil{
-				return err
 			}
 			runtimeManager.Clean()
 			wd = filepath.Join(wd, progName)
@@ -82,12 +79,10 @@ func new(cmd *cobra.Command, args []string) error {
 				return err
 			}
 			runtimeManager, err = runtime.NewManager(&wd, true)
-			if err != nil{
+			if err != nil {
 				return err
 			}
 		}
-	} else{
-		return err
 	}
 
 	if progName == "" {
