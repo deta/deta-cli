@@ -133,7 +133,7 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 		Header: res.Header,
 	}
 
-	if res.StatusCode >= 200 && res.StatusCode <= 299 && res.StatusCode != 204 {
+	if res.StatusCode >= 200 && res.StatusCode <= 299 {
 		if res.StatusCode != 204 {
 			o.Body = b
 		}

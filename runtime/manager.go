@@ -159,7 +159,7 @@ func (m *Manager) StoreUserInfo(u *UserInfo) error {
 	return ioutil.WriteFile(m.userInfoPath, marshalled, filePermMode)
 }
 
-// GetUserInfo gets the program info stored
+// GetUserInfo gets the user info
 func (m *Manager) GetUserInfo() (*UserInfo, error) {
 	contents, err := m.readFile(m.userInfoPath)
 	if err != nil {
@@ -194,7 +194,7 @@ func (m *Manager) IsProgDirEmpty() (bool, error) {
 	defer f.Close()
 	names, err := f.Readdirnames(-1)
 	if err != nil {
-		if err == io.EOF{
+		if err == io.EOF {
 			return true, nil
 		}
 		return false, err
@@ -737,10 +737,10 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 // Clean removes files creatd by the rutime manager
 func (m *Manager) Clean() error {
 	isInitialized, err := m.IsInitialized()
-	if err != nil{
+	if err != nil {
 		return err
 	}
-	if !isInitialized{
+	if !isInitialized {
 		return os.RemoveAll(m.detaPath)
 	}
 	return nil
