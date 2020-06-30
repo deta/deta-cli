@@ -44,6 +44,10 @@ func listProjects(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	for _, p := range res.Projects {
+		p.ID = ""
+	}
+
 	output, err := prettyPrint(res.Projects)
 	if err != nil {
 		return err
