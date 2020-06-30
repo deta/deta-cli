@@ -557,6 +557,7 @@ type GetProjectsRequest struct {
 
 // GetProjectsItem an item in get projects response
 type GetProjectsItem struct {
+	ID          string `json:"id,omitempty"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Created     string `json:"created"`
@@ -564,7 +565,7 @@ type GetProjectsItem struct {
 
 // GetProjectsResponse response to get projects request
 type GetProjectsResponse struct {
-	Projects []GetProjectsItem `json:"projects"`
+	Projects []*GetProjectsItem `json:"projects"`
 }
 
 // GetProjects gets projects

@@ -1,0 +1,100 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	rt "runtime"
+
+	"github.com/deta/deta-cli/api"
+	"github.com/deta/deta-cli/runtime"
+	"github.com/spf13/cobra"
+)
+
+var (
+	// set with Makefile during compilation
+	visorURL string
+
+	visorOpenCmd = &cobra.Command{
+		Use:   "open [path]",
+		Short: "Open deta visor page for a deta micro",
+		Args:  cobra.MaximumNArgs(1),
+		RunE:  visorOpen,
+	}
+)
+
+func init() {
+	visorCmd.AddCommand(visorOpenCmd)
+}
+
+func visorOpen(cmd *cobra.Command, args []string) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if len(args) > 0 {
+		wd = args[0]
+	}
+	runtimeManager, err := runtime.NewManager(&wd, false)
+	if err != nil {
+		return err
+	}
+
+	isInitialized, err := runtimeManager.IsInitialized()
+	if err != nil {
+		return err
+	}
+
+	if !isInitialized {
+		return fmt.Errorf(fmt.Sprintf("no deta micro present in '%s'", wd))
+	}
+
+	userInfo, err := runtimeManager.GetUserInfo()
+	if err != nil {
+		return err
+	}
+
+	if userInfo == nil {
+		return fmt.Errorf("login required, login with 'deta login'")
+	}
+
+	progInfo, err := runtimeManager.GetProgInfo()
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.GetProjects(&api.GetProjectsRequest{
+		SpaceID: userInfo.DefaultSpace,
+	})
+	if err != nil {
+		return err
+	}
+	var progProject string
+	for _, p := range resp.Projects {
+		if p.ID == progInfo.Project {
+			progProject = p.Name
+		}
+	}
+
+	visorEndpoint := fmt.Sprintf("%s/?space=%s&project=%s&micro=%s",
+		visorURL,
+		userInfo.DefaultSpaceName,
+		progProject,
+		progInfo.Name,
+	)
+	fmt.Println("Opening visor in the browser...")
+	return openVisorPage(visorEndpoint)
+}
+
+func openVisorPage(url string) error {
+	switch rt.GOOS {
+	case "linux":
+		return exec.Command("xdg-open", url).Start()
+	case "windows":
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		return exec.Command("open", url).Start()
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+}
