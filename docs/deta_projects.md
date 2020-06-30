@@ -1,19 +1,19 @@
-## deta login
+## deta projects
 
-Login to deta
+List deta projects
 
 ### Synopsis
 
-Login to deta
+List deta projects
 
 ```
-deta login [flags]
+deta projects [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for login
+  -h, --help   help for projects
 ```
 
 ### SEE ALSO

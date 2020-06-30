@@ -1,23 +1,21 @@
-## deta new
+## deta clone
 
-Create a new deta micro
+Clone a deta micro
 
 ### Synopsis
 
-Create a new deta micro
+Clone a deta micro
 
 ```
-deta new [flags] [path]
+deta clone [flags] [path]
 ```
 
 ### Options
 
 ```
-  -h, --help             help for new
+  -h, --help             help for clone
       --name string      deta micro name
-  -n, --node             create a micro with node runtime
       --project string   deta project
-  -p, --python           create a micro with python runtime
 ```
 
 ### SEE ALSO

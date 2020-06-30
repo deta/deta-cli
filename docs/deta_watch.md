@@ -1,19 +1,19 @@
-## deta login
+## deta watch
 
-Login to deta
+Deploy changes in real time
 
 ### Synopsis
 
-Login to deta
+Deploy changes in real time
 
 ```
-deta login [flags]
+deta watch [path] [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for login
+  -h, --help   help for watch
 ```
 
 ### SEE ALSO
