@@ -148,6 +148,12 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 		return o, nil
 	}
 
+	if res.StatusCode == 502 {
+		er.Message = "Internal server error"
+		o.Error = &er
+		return o, nil
+	}
+
 	err = json.Unmarshal(b, &er)
 	if err != nil {
 		return nil, err

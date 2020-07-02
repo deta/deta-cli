@@ -16,12 +16,12 @@ func (c *DetaClient) injectResourceHeader(headers map[string]string, account, re
 
 // DeployRequest deploy program request
 type DeployRequest struct {
-	ProgramID string            `json:"pid"`
-	Changes   map[string]string `json:"change"`
-	Deletions []string          `json:"delete"`
+	ProgramID   string            `json:"pid"`
+	Changes     map[string]string `json:"change"`
+	Deletions   []string          `json:"delete"`
 	BinaryFiles map[string]string `json:"binary"`
-	Account   string            `json:"-"`
-	Region    string            `json:"-"`
+	Account     string            `json:"-"`
+	Region      string            `json:"-"`
 }
 
 // DeployResponse deploy program response
@@ -248,7 +248,7 @@ func (c *DetaClient) DownloadProgram(req *DownloadProgramRequest) (*DownloadProg
 				viewProgFileReq := &ViewProgramFileRequest{
 					ProgramID: req.ProgramID,
 					Filepath:  file,
-					Account:   req.ProgramID,
+					Account:   req.Account,
 					Region:    req.Region,
 				}
 				contents, err := c.ViewProgramFile(viewProgFileReq)
