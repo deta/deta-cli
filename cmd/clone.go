@@ -122,6 +122,7 @@ func clone(cmd *cobra.Command, args []string) error {
 		Public:  progDetails.Public,
 	}
 
+	fmt.Println("Cloning...")
 	o, err := client.DownloadProgram(&api.DownloadProgramRequest{
 		ProgramID: progInfo.ID,
 		Runtime:   progInfo.Runtime,
