@@ -16,11 +16,12 @@ func (c *DetaClient) injectResourceHeader(headers map[string]string, account, re
 
 // DeployRequest deploy program request
 type DeployRequest struct {
-	ProgramID string            `json:"pid"`
-	Changes   map[string]string `json:"change"`
-	Deletions []string          `json:"delete"`
-	Account   string            `json:"-"`
-	Region    string            `json:"-"`
+	ProgramID   string            `json:"pid"`
+	Changes     map[string]string `json:"change"`
+	Deletions   []string          `json:"delete"`
+	BinaryFiles map[string]string `json:"binary"`
+	Account     string            `json:"-"`
+	Region      string            `json:"-"`
 }
 
 // DeployResponse deploy program response
@@ -142,7 +143,7 @@ func (c *DetaClient) ViewProgram(r *ViewProgramRequest) (*ViewProgramResponse, e
 	}
 
 	i := &requestInput{
-		Path:        fmt.Sprintf("/%s/%s", viewerPath, r.ProgramID),
+		Path:        fmt.Sprintf("/%s/encoded/%s", viewerPath, r.ProgramID),
 		Method:      "GET",
 		Headers:     headers,
 		QueryParams: queryParams,
@@ -188,7 +189,7 @@ func (c *DetaClient) ViewProgramFile(r *ViewProgramFileRequest) (*string, error)
 	}
 
 	i := &requestInput{
-		Path:        fmt.Sprintf("/%s/file/%s", viewerPath, r.ProgramID),
+		Path:        fmt.Sprintf("/%s/encoded/file/%s", viewerPath, r.ProgramID),
 		Method:      "GET",
 		Headers:     headers,
 		QueryParams: queryParams,
@@ -247,7 +248,7 @@ func (c *DetaClient) DownloadProgram(req *DownloadProgramRequest) (*DownloadProg
 				viewProgFileReq := &ViewProgramFileRequest{
 					ProgramID: req.ProgramID,
 					Filepath:  file,
-					Account:   req.ProgramID,
+					Account:   req.Account,
 					Region:    req.Region,
 				}
 				contents, err := c.ViewProgramFile(viewProgFileReq)
