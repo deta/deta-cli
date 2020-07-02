@@ -63,5 +63,11 @@ func updateAuth(value bool, args []string) error {
 		msg = "Successfully enabled http auth"
 	}
 	fmt.Println(msg)
+
+	progInfo.Public = true
+	if value {
+		progInfo.Public = false
+	}
+	runtimeManager.StoreProgInfo(progInfo)
 	return nil
 }

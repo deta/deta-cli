@@ -33,7 +33,7 @@ func progInfoToOutput(p *runtime.ProgInfo) (string, error) {
 	}
 	o.Endpoint = fmt.Sprintf("https://%s.%s", p.Path, gatewayDomain)
 	if p.Visor == "off" {
-		o.Visor = "enabled"
+		o.Visor = "disabled"
 	}
 	if p.Public {
 		o.Auth = "disabled"
