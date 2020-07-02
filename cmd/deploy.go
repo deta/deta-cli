@@ -102,12 +102,12 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 	if c != nil {
 		fmt.Println("Deploying...")
 		_, err = client.Deploy(&api.DeployRequest{
-			ProgramID: p.ID,
-			Changes:   c.Changes,
-			Deletions: c.Deletions,
+			ProgramID:   p.ID,
+			Changes:     c.Changes,
+			Deletions:   c.Deletions,
 			BinaryFiles: c.BinaryFiles,
-			Account:   p.Account,
-			Region:    p.Region,
+			Account:     p.Account,
+			Region:      p.Region,
 		})
 		if err != nil {
 			return err

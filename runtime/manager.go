@@ -291,6 +291,9 @@ func (m *Manager) readFile(path string) ([]byte, bool, error) {
 	}
 	kind, err := filetype.Match(contents)
 	if err != nil {
+		if errors.Is(err, filetype.ErrEmptyBuffer) {
+			return contents, false, nil
+		}
 		return nil, false, err
 	}
 	isBinary := true
