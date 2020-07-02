@@ -141,6 +141,13 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 	}
 
 	var er errorResp
+
+	if res.StatusCode == 413 {
+		er.Message = "Request entity too large"
+		o.Error = &er
+		return o, nil
+	}
+
 	err = json.Unmarshal(b, &er)
 	if err != nil {
 		return nil, err
