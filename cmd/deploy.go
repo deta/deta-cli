@@ -105,6 +105,7 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 			ProgramID: p.ID,
 			Changes:   c.Changes,
 			Deletions: c.Deletions,
+			BinaryFiles: c.BinaryFiles,
 			Account:   p.Account,
 			Region:    p.Region,
 		})

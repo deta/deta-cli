@@ -19,6 +19,7 @@ type DeployRequest struct {
 	ProgramID string            `json:"pid"`
 	Changes   map[string]string `json:"change"`
 	Deletions []string          `json:"delete"`
+	BinaryFiles map[string]string `json:"binary"`
 	Account   string            `json:"-"`
 	Region    string            `json:"-"`
 }
@@ -142,7 +143,7 @@ func (c *DetaClient) ViewProgram(r *ViewProgramRequest) (*ViewProgramResponse, e
 	}
 
 	i := &requestInput{
-		Path:        fmt.Sprintf("/%s/%s", viewerPath, r.ProgramID),
+		Path:        fmt.Sprintf("/%s/encoded/%s", viewerPath, r.ProgramID),
 		Method:      "GET",
 		Headers:     headers,
 		QueryParams: queryParams,
@@ -188,7 +189,7 @@ func (c *DetaClient) ViewProgramFile(r *ViewProgramFileRequest) (*string, error)
 	}
 
 	i := &requestInput{
-		Path:        fmt.Sprintf("/%s/file/%s", viewerPath, r.ProgramID),
+		Path:        fmt.Sprintf("/%s/encoded/file/%s", viewerPath, r.ProgramID),
 		Method:      "GET",
 		Headers:     headers,
 		QueryParams: queryParams,

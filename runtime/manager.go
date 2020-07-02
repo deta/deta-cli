@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/h2non/filetype"
 )
 
 const (
@@ -140,7 +143,7 @@ func (m *Manager) StoreProgInfo(p *ProgInfo) error {
 
 // GetProgInfo gets the program info stored
 func (m *Manager) GetProgInfo() (*ProgInfo, error) {
-	contents, err := m.readFile(m.progInfoPath)
+	contents, _, err := m.readFile(m.progInfoPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -161,7 +164,7 @@ func (m *Manager) StoreUserInfo(u *UserInfo) error {
 
 // GetUserInfo gets the user info
 func (m *Manager) GetUserInfo() (*UserInfo, error) {
-	contents, err := m.readFile(m.userInfoPath)
+	contents, _, err := m.readFile(m.userInfoPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -275,23 +278,31 @@ func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
 	return false, nil
 }
 
-// reads the contents of a file
-func (m *Manager) readFile(path string) ([]byte, error) {
+// reads the contents of a file, returns contents and if file is binary or not
+func (m *Manager) readFile(path string) ([]byte, bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	defer f.Close()
 	contents, err := ioutil.ReadAll(f)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return contents, nil
+	kind, err := filetype.Match(contents)
+	if err != nil {
+		return nil, false, err
+	}
+	isBinary := true
+	if kind == filetype.Unknown {
+		isBinary = false
+	}
+	return contents, isBinary, nil
 }
 
 // calculates the sha256 sum of contents of file in path
 func (m *Manager) calcChecksum(path string) (string, error) {
-	contents, err := m.readFile(path)
+	contents, _, err := m.readFile(path)
 	if err != nil {
 		return "", err
 	}
@@ -357,7 +368,7 @@ func (m *Manager) StoreState() error {
 
 // gets the current stored state
 func (m *Manager) getStoredState() (stateMap, error) {
-	contents, err := m.readFile(m.statePath)
+	contents, _, err := m.readFile(m.statePath)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +387,8 @@ func (m *Manager) readAll() (*StateChanges, error) {
 	}
 
 	sc := &StateChanges{
-		Changes: make(map[string]string),
+		Changes:     make(map[string]string),
+		BinaryFiles: make(map[string]string),
 	}
 
 	err = filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
@@ -402,17 +414,16 @@ func (m *Manager) readAll() (*StateChanges, error) {
 			return nil
 		}
 
-		f, err := os.Open(filepath.Join(m.rootDir, path))
+		contents, isBinary, err := m.readFile(filepath.Join(m.rootDir, path))
 		if err != nil {
 			return err
 		}
-		defer f.Close()
 
-		contents, err := ioutil.ReadAll(f)
-		if err != nil {
-			return err
+		if isBinary {
+			sc.Changes[filepath.ToSlash(path)] = string(contents)
+		} else {
+			sc.BinaryFiles[filepath.ToSlash(path)] = base64.StdEncoding.EncodeToString(contents)
 		}
-		sc.Changes[filepath.ToSlash(path)] = string(contents)
 		return nil
 	})
 	if err != nil {
@@ -429,7 +440,8 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 	}
 
 	sc := &StateChanges{
-		Changes: make(map[string]string),
+		Changes:     make(map[string]string),
+		BinaryFiles: make(map[string]string),
 	}
 
 	storedState, err := m.getStoredState()
@@ -480,11 +492,15 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		}
 
 		if storedState[filepath.ToSlash(path)] != checksum {
-			contents, err := m.readFile(filepath.Join(m.rootDir, path))
+			contents, isBinary, err := m.readFile(filepath.Join(m.rootDir, path))
 			if err != nil {
 				return err
 			}
-			sc.Changes[filepath.ToSlash(path)] = string(contents)
+			if isBinary {
+				sc.BinaryFiles[filepath.ToSlash(path)] = base64.StdEncoding.EncodeToString(contents)
+			} else {
+				sc.Changes[filepath.ToSlash(path)] = string(contents)
+			}
 		}
 		return nil
 	})
@@ -500,7 +516,7 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		i++
 	}
 
-	if len(sc.Changes) == 0 && len(sc.Deletions) == 0 {
+	if len(sc.Changes) == 0 && len(sc.Deletions) == 0 && len(sc.BinaryFiles) == 0 {
 		return nil, nil
 	}
 	return sc, nil
@@ -516,7 +532,7 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 	if !ok {
 		return nil, fmt.Errorf("unsupported runtime %s", runtime)
 	}
-	contents, err := m.readFile(filepath.Join(m.rootDir, depFile))
+	contents, _, err := m.readFile(filepath.Join(m.rootDir, depFile))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -614,7 +630,7 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 
 // readEnvs read env variables from the env file
 func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
-	contents, err := m.readFile(filepath.Join(m.rootDir, envFile))
+	contents, _, err := m.readFile(filepath.Join(m.rootDir, envFile))
 	if err != nil {
 		return nil, err
 	}
@@ -725,7 +741,11 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 		_, f := filepath.Split(file)
 		if f != "" {
 			file = filepath.Join(writeDir, file)
-			err := ioutil.WriteFile(file, []byte(content), filePermMode)
+			c, err := base64.StdEncoding.DecodeString(content)
+			if err != nil {
+				return err
+			}
+			err = ioutil.WriteFile(file, c, filePermMode)
 			if err != nil {
 				return err
 			}
