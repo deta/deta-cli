@@ -63,5 +63,11 @@ func updateVisor(mode string, args []string) error {
 		msg = fmt.Sprintf("Successfully enabled visor mode")
 	}
 	fmt.Println(msg)
+
+	progInfo.Visor = "off"
+	if mode == "debug" {
+		progInfo.Visor = "debug"
+	}
+	runtimeManager.StoreProgInfo(progInfo)
 	return nil
 }
