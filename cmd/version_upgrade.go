@@ -66,13 +66,14 @@ func upgradeUnix() error {
 		return err
 	}
 
-	shCmd := exec.Command("sh")
+	co := string(curlOutput)
+	shCmd := exec.Command("sh", "-c", co)
 	if versionFlag != "" {
 		if !strings.HasPrefix(versionFlag, "v") {
 			versionFlag = fmt.Sprintf("v%s", versionFlag)
 		}
 		msg = fmt.Sprintf("%s to version %s", msg, versionFlag)
-		shCmd = exec.Command("sh", "-c", string(curlOutput), "upgrade", versionFlag)
+		shCmd = exec.Command("sh", "-c", co, "upgrade", versionFlag)
 	}
 	fmt.Println(fmt.Sprintf("%s...", msg))
 
