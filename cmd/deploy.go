@@ -23,6 +23,11 @@ func init() {
 }
 
 func deploy(cmd *cobra.Command, args []string) error {
+	// check version
+	c := make(chan *checkVersionMsg, 1)
+	defer close(c)
+	go checkVersion(c)
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -48,6 +53,10 @@ func deploy(cmd *cobra.Command, args []string) error {
 	err = deployChanges(runtimeManager, progInfo, false)
 	if err != nil {
 		return err
+	}
+	cm := <-c
+	if cm.err != nil && cm.isLower {
+		fmt.Println("New Deta CLI version available, upgrade with `deta version upgrade`")
 	}
 	return nil
 }
