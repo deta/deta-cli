@@ -15,7 +15,7 @@ import (
 var (
 	showLogs bool
 	runCmd   = &cobra.Command{
-		Use:   "run [flags] [-- [action] <input>]",
+		Use:   "run [flags] [action] [-- <input args>]",
 		Short: "Run a deta micro",
 		RunE:  run,
 	}
