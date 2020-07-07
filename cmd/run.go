@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	inputFile string
-	runCmd    = &cobra.Command{
+	showLogs bool
+	runCmd   = &cobra.Command{
 		Use:   "run [flags] [-- [action] <input>]",
 		Short: "Run a deta micro",
 		RunE:  run,
@@ -22,6 +22,7 @@ var (
 )
 
 func init() {
+	runCmd.Flags().BoolVarP(&showLogs, "logs", "l", false, "show micro logs")
 	rootCmd.AddCommand(runCmd)
 }
 
@@ -65,17 +66,12 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("Running micro...")
+	fmt.Println()
 	res, err := client.InvokeProgram(req)
 	if err != nil {
 		return err
 	}
-
-	out, err := prettyPrint(res)
-	if err != nil {
-		return err
-	}
-	fmt.Println(out)
-	return nil
+	return printResponse(res.Payload, res.Logs)
 }
 
 func parseArgs(args []string) (string, map[string]interface{}) {
@@ -119,4 +115,45 @@ func cleanFlag(flag string) string {
 		}
 	}
 	return ""
+}
+
+func cleanLogs(logs string) string {
+	logsParts := strings.Split(logs, "\n")
+	logsParts = logsParts[1 : len(logsParts)-3]
+	return strings.Join(logsParts, "\n")
+}
+
+func printResponse(payload, logs string) error {
+	var p map[string]interface{}
+	err := json.Unmarshal([]byte(payload), &p)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Response:")
+	if b, ok := p["body"]; ok {
+		var body interface{}
+		err := json.Unmarshal([]byte(b.(string)), &body)
+		if err != nil {
+			return err
+		}
+		o, err := prettyPrint(body)
+		if err != nil {
+			return err
+		}
+		fmt.Println(o)
+	} else {
+		o, err := prettyPrint(p)
+		if err != nil {
+			return err
+		}
+		fmt.Println(o)
+	}
+
+	if showLogs {
+		fmt.Println()
+		fmt.Println("Logs:")
+		fmt.Println(cleanLogs(logs))
+	}
+	return nil
 }

@@ -682,7 +682,6 @@ func (c *DetaClient) InvokeProgram(req *InvokeProgRequest) (*InvokeProgResponse,
 	}
 
 	var resp InvokeProgResponse
-
 	err = json.Unmarshal(o.Body, &resp)
 	if err != nil {
 		return nil, err
