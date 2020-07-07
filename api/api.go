@@ -645,3 +645,46 @@ func (c *DetaClient) GetProgDetails(req *GetProgDetailsRequest) (*GetProgDetails
 	}
 	return &resp, nil
 }
+
+// InvokeProgRequest request to invoke a program
+type InvokeProgRequest struct {
+	ProgramID string `json:"-"`
+	Action    string `json:"action,omitempty"`
+	Body      string `json:"body,omitempty"`
+}
+
+// InvokeProgResponse response to invoke program request
+type InvokeProgResponse struct {
+	Logs    string `json:"logs"`
+	Payload string `json:"payload"`
+}
+
+// InvokeProgram invoke lambda program
+func (c *DetaClient) InvokeProgram(req *InvokeProgRequest) (*InvokeProgResponse, error) {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/invocations/%s", req.ProgramID),
+		Method:    "POST",
+		Body:      req,
+		NeedsAuth: true,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return nil, err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return nil, fmt.Errorf("failed to invoke program: %v", msg)
+	}
+
+	var resp InvokeProgResponse
+	err = json.Unmarshal(o.Body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
