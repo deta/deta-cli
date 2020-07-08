@@ -101,15 +101,14 @@ func setExamples() string {
 	return `
 Rate:
 
-deta cron set "1 minute" : run every minute
-deta cron set "5 hours" : run every five hours
+1. deta cron set "1 minute" : run every minute
+2. deta cron set "5 hours" : run every five hours
 
 Cron expressions:
 
-deta cron set "0 10 * * ? *" : run at 10:00 am(UTC) every day
-deta cron set "30 18 ? * MON-FRI *" : run at 6:00 pm(UTC) Monday through Friday
-deta cron set "0/5 8-17 ? * MON-FRI *" : run every 5 minutes Monday through Friday between 8:00 am and 5:55 pm(UTC)
+1. deta cron set "0 10 * * ? *" : run at 10:00 am(UTC) every day
+2. deta cron set "30 18 ? * MON-FRI *" : run at 6:00 pm(UTC) Monday through Friday
+3. deta cron set "0/5 8-17 ? * MON-FRI *" : run every 5 minutes Monday through Friday between 8:00 am and 5:55 pm(UTC)
 
-See more examples at https://docs.deta.sh
-`
+See more examples at https://docs.deta.sh`
 }

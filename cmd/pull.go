@@ -13,10 +13,11 @@ var (
 	forcePull bool
 
 	pullCmd = &cobra.Command{
-		Use:   "pull [flags]",
-		Short: "Pull the lastest deployed code of a deta micro",
-		RunE:  pull,
-		Args:  cobra.MaximumNArgs(1),
+		Use:     "pull [flags]",
+		Short:   "Pull the lastest deployed code of a deta micro",
+		RunE:    pull,
+		Example: pullExamples(),
+		Args:    cobra.MaximumNArgs(1),
 	}
 )
 
@@ -76,4 +77,17 @@ func pull(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println(fmt.Sprintf("Successfully pulled latest deployed code"))
 	return nil
+}
+
+func pullExamples() string {
+	return `
+1. deta pull
+
+Pull latest changes of deta micro present in the current directory. 
+Asks for approval before overwriting the files in the current directory.
+
+2. deta pull --force
+
+Force pull latest changes of deta micro present in the current directory.
+Overwrites the files present in the current directory.`
 }

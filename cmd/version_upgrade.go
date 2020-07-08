@@ -13,10 +13,11 @@ var (
 	versionFlag string
 
 	upgradeCmd = &cobra.Command{
-		Use:   "upgrade",
-		Short: "Upgrade cli version",
-		RunE:  upgrade,
-		Args:  cobra.NoArgs,
+		Use:     "upgrade",
+		Short:   "Upgrade cli version",
+		Example: versionUpgradeExamples(),
+		RunE:    upgrade,
+		Args:    cobra.NoArgs,
 	}
 )
 
@@ -83,4 +84,15 @@ func upgradeUnix() error {
 		return err
 	}
 	return nil
+}
+
+func versionUpgradeExamples() string {
+	return `
+1. deta version upgrade
+
+Upgrade cli to latest version.
+
+2. deta version upgrade --version v1.0.0
+
+Upgrade cli to version 'v1.0.0'.`
 }
