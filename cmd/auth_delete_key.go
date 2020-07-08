@@ -11,16 +11,16 @@ import (
 
 var (
 	deleteAPIKeyCmd = &cobra.Command{
-		Use:   "delete-api-key",
-		Short: "Delete api key for a deta micro",
-		Args:  cobra.MaximumNArgs(1),
-		RunE:  deleteAPIKey,
+		Use:     "delete-api-key",
+		Short:   "Delete api key for a deta micro",
+		Args:    cobra.MaximumNArgs(1),
+		Example: authDeleteKeyExamples(),
+		RunE:    deleteAPIKey,
 	}
 )
 
 func init() {
 	deleteAPIKeyCmd.Flags().StringVarP(&apiKeyName, "name", "n", "", "api-key name")
-	deleteAPIKeyCmd.Flags().StringVarP(&apiKeyDesc, "desc", "d", "", "api-key description")
 	deleteAPIKeyCmd.MarkFlagRequired("name")
 
 	authCmd.AddCommand(deleteAPIKeyCmd)
@@ -62,4 +62,11 @@ func deleteAPIKey(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println(fmt.Sprintf("Succesfully deleted api key '%s'", apiKeyName))
 	return nil
+}
+
+func authDeleteKeyExamples() string {
+	return `
+1. deta auth delete-api-key --name agent1
+
+Delete api key with name 'agent1'`
 }

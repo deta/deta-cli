@@ -21,10 +21,11 @@ var (
 	projectName string
 
 	newCmd = &cobra.Command{
-		Use:   "new [flags] [path]",
-		Short: "Create a new deta micro",
-		RunE:  new,
-		Args:  cobra.MaximumNArgs(1),
+		Use:     "new [flags] [path]",
+		Short:   "Create a new deta micro",
+		RunE:    new,
+		Example: newExamples(),
+		Args:    cobra.MaximumNArgs(1),
 	}
 )
 
@@ -265,4 +266,25 @@ func new(cmd *cobra.Command, args []string) error {
 		}
 	}
 	return nil
+}
+
+func newExamples() string {
+	return `
+1. deta new
+
+Create a new deta micro from the current directory with an entrypoint file (either 'main.py' or 'index.js') already present in the directory.
+
+2. deta new my-micro
+
+Create a new deta micro from './my-micro' directory with an entrypoint file (either 'main.py' or 'index.js') already present in the directory.
+
+2. deta new --node my-node-micro
+
+Create a new deta micro with the node runtime in the directory './my-node-micro'.
+'./my-node-micro' must not contain a python entrypoint file ('main.py') if directory is already present. 
+
+3. deta new --python --name my-github-webhook webhooks/github-deta
+
+Create a new deta micro with the python runtime, name 'my-github-webhook' and in directory 'webhooks/github-deta'. 
+'./my-node-micro' must not contain a node entrypoint file ('index.js') if directory is already present. `
 }

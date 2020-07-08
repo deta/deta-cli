@@ -17,10 +17,11 @@ var (
 	apiKeyDesc string
 
 	createAPIKeyCmd = &cobra.Command{
-		Use:   "create-api-key",
-		Short: "Create api keys for a deta micro",
-		Args:  cobra.MaximumNArgs(1),
-		RunE:  createAPIKey,
+		Use:     "create-api-key [path]",
+		Short:   "Create api keys for a deta micro",
+		Args:    cobra.MaximumNArgs(1),
+		Example: authCreateKeyExamples(),
+		RunE:    createAPIKey,
 	}
 )
 
@@ -91,4 +92,15 @@ func createAPIKey(cmd *cobra.Command, args []string) error {
 		fmt.Println(fmt.Sprintf("Saved to file '%s'", outfilepath))
 	}
 	return nil
+}
+
+func authCreateKeyExamples() string {
+	return `
+1. deta auth create-api-key --name agent1 --desc "api key for agent 1"
+
+Create an api key with name 'agent1' and description 'api key for agent 1'
+
+2. deta auth create-api-key --name agent1 --outfile agent_1_key.txt
+
+Create an api key with name 'agent1' and save it to file 'agent_1_key.txt'`
 }

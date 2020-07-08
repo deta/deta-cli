@@ -15,10 +15,11 @@ var (
 	envsPath string
 
 	updateCmd = &cobra.Command{
-		Use:   "update",
-		Short: "Update a deta micro",
-		RunE:  update,
-		Args:  cobra.MaximumNArgs(1),
+		Use:     "update",
+		Short:   "Update a deta micro",
+		RunE:    update,
+		Example: updateExamples(),
+		Args:    cobra.MaximumNArgs(1),
 	}
 )
 
@@ -110,4 +111,16 @@ func update(cmd *cobra.Command, args []string) error {
 		fmt.Println("Successfully updated micro's environment variables")
 	}
 	return nil
+}
+
+func updateExamples() string {
+	return `
+1. deta update --name a-new-name
+
+Update the name of a deta micro with a new name "a-new-name".
+
+2. deta update --env env-file
+
+Update the enviroment variables of a deta micro from the file 'env-file'. 
+File 'env-file' must have env vars of format 'key=value'.`
 }

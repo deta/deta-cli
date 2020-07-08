@@ -11,10 +11,11 @@ import (
 
 var (
 	deployCmd = &cobra.Command{
-		Use:   "deploy",
-		Short: "Deploy a deta micro",
-		Args:  cobra.MaximumNArgs(1),
-		RunE:  deploy,
+		Use:     "deploy [path]",
+		Short:   "Deploy a deta micro",
+		Args:    cobra.MaximumNArgs(1),
+		Example: deployExamples(),
+		RunE:    deploy,
 	}
 )
 
@@ -198,4 +199,15 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 		}
 	}
 	return nil
+}
+
+func deployExamples() string {
+	return `
+1. deta deploy
+
+Deploy a deta micro rooted in the current directory.
+
+2. deta deploy micros/my-micro-1
+
+Deploy a deta micro rooted in 'micros/my-micro-1' directory.`
 }
