@@ -688,3 +688,107 @@ func (c *DetaClient) InvokeProgram(req *InvokeProgRequest) (*InvokeProgResponse,
 	}
 	return &resp, nil
 }
+
+// AddScheduleRequest request to add schedule/cron to a program
+type AddScheduleRequest struct {
+	ProgramID  string `json:"program_id"`
+	Type       string `json:"type"`
+	Expression string `json:"expression"`
+}
+
+// AddSchedule add a schedule/cron to a program
+func (c *DetaClient) AddSchedule(req *AddScheduleRequest) error {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/schedules/"),
+		Method:    "POST",
+		NeedsAuth: true,
+		Body:      req,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return fmt.Errorf("failed to add schedule: %v", msg)
+	}
+	return nil
+}
+
+// DeleteScheduleRequest request to delete a schedule/cron from a program
+type DeleteScheduleRequest struct {
+	ProgramID string
+}
+
+// DeleteSchedule delete a schedule from a program
+func (c *DetaClient) DeleteSchedule(req *DeleteScheduleRequest) error {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/schedules/%s", req.ProgramID),
+		Method:    "DELETE",
+		NeedsAuth: true,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return fmt.Errorf("failed to delete schedule: %v", msg)
+	}
+	return nil
+}
+
+// GetScheduleRequest request to get a schedule for a program
+type GetScheduleRequest struct {
+	ProgramID string
+}
+
+// GetScheduleResponse response to get schedule request
+type GetScheduleResponse struct {
+	ProgramID  string `json:"id"`
+	Type       string `json:"type"`
+	Expression string `json:"expression"`
+}
+
+// GetSchedule  get a schedule for a program
+func (c *DetaClient) GetSchedule(req *GetScheduleRequest) (*GetScheduleResponse, error) {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/schedules/%s", req.ProgramID),
+		Method:    "GET",
+		NeedsAuth: true,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return nil, err
+	}
+
+	if o.Status == 404 {
+		return nil, nil
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return nil, fmt.Errorf("failed to get schedule: %v", msg)
+	}
+
+	var resp GetScheduleResponse
+	err = json.Unmarshal(o.Body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
