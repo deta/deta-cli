@@ -20,6 +20,7 @@ type progDetailsOutput struct {
 	Envs     []string `json:"environment_variables,omitempty"`
 	Visor    string   `json:"visor"`
 	Auth     string   `json:"http_auth"`
+	Cron     string   `json:"cron,omitempty"`
 }
 
 func progInfoToOutput(p *runtime.ProgInfo) (string, error) {
@@ -30,6 +31,7 @@ func progInfoToOutput(p *runtime.ProgInfo) (string, error) {
 		Envs:    p.Envs,
 		Visor:   "enabled",
 		Auth:    "enabled",
+		Cron:    p.Cron,
 	}
 	o.Endpoint = fmt.Sprintf("https://%s.%s", p.Path, gatewayDomain)
 	if p.Visor == "off" {
