@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
-	"github.com/coreos/go-semver/semver"
 	"github.com/spf13/cobra"
 )
 
@@ -69,21 +67,6 @@ func checkVersionExists(tag string) (bool, error) {
 	return false, fmt.Errorf("unexpected status code from github: %d", resp.StatusCode)
 }
 
-func isLowerVersion(version, from string) (bool, error) {
-	version = strings.TrimPrefix(version, "v")
-	from = strings.TrimPrefix(from, "v")
-
-	va, err := semver.NewVersion(version)
-	if err != nil {
-		return false, err
-	}
-	vb, err := semver.NewVersion(from)
-	if err != nil {
-		return false, err
-	}
-	return va.LessThan(*vb), nil
-}
-
 type checkVersionMsg struct {
 	isLower bool
 	err     error
@@ -93,17 +76,12 @@ func checkVersion(c chan *checkVersionMsg) {
 	cm := &checkVersionMsg{}
 	latestVersion, err := getLatestVersionTag()
 	if err != nil {
+		fmt.Println("error in get latest version tag: ", err)
 		cm.err = err
 		c <- cm
 		return
 	}
-	lowerVersion, err := isLowerVersion(detaVersion, latestVersion)
-	if err != nil {
-		cm.err = err
-		c <- cm
-		return
-	}
-	cm.isLower = lowerVersion
+	cm.isLower = detaVersion != latestVersion
 	cm.err = nil
 	c <- cm
 	return
