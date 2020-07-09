@@ -56,7 +56,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	cm := <-c
-	if cm.err != nil && cm.isLower {
+	if cm.err == nil && cm.isLower {
 		fmt.Println("New Deta CLI version available, upgrade with `deta version upgrade`")
 	}
 	return nil
