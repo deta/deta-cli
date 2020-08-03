@@ -11,10 +11,15 @@ import (
 
 const NewLine = "\r\n"
 
+// other binary extensions
+var otherBinaryExts = map[string]struct{}{
+	".mo": {},
+}
+
 func isHiddenWindows(path string) (bool, error) {
 	_, filename := filepath.Split(path)
 	// consider paths starting with "." also hidden in windows
-	if strings.HasPrefix(filename, ".") && filename != "."{
+	if strings.HasPrefix(filename, ".") && filename != "." {
 		return true, nil
 	}
 	filePtr, err := windows.UTF16PtrFromString(path)

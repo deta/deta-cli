@@ -289,6 +289,7 @@ func (m *Manager) readFile(path string) ([]byte, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
+
 	kind, err := filetype.Match(contents)
 	if err != nil {
 		if errors.Is(err, filetype.ErrEmptyBuffer) {
@@ -299,6 +300,9 @@ func (m *Manager) readFile(path string) ([]byte, bool, error) {
 	isBinary := true
 	if kind == filetype.Unknown {
 		isBinary = false
+		if _, ok := otherBinaryExts[filepath.Ext(path)]; ok {
+			isBinary = true
+		}
 	}
 	return contents, isBinary, nil
 }
