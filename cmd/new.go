@@ -183,10 +183,11 @@ func new(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println(output)
 
+	// wait for permissions to propagate before viewing/updating program
+	time.Sleep(1 * time.Second)
+
 	// dowload template files if dir is empty
 	if isEmpty {
-		// wait for permissions to propagate before viewing program
-		time.Sleep(1 * time.Second)
 		o, err := client.DownloadProgram(&api.DownloadProgramRequest{
 			ProgramID: res.ID,
 			Runtime:   res.Runtime,
@@ -210,24 +211,25 @@ func new(cmd *cobra.Command, args []string) error {
 
 	c, err := runtimeManager.GetChanges()
 	if err != nil {
-		fmt.Print("get changes:", err)
 		return err
 	}
 
-	_, err = client.Deploy(&api.DeployRequest{
-		ProgramID: res.ID,
-		Changes:   c.Changes,
-		Deletions: c.Deletions,
-		Account:   res.Account,
-		Region:    res.Region,
-	})
-	if err != nil {
-		return err
+	if c != nil {
+		_, err = client.Deploy(&api.DeployRequest{
+			ProgramID:   res.ID,
+			Changes:     c.Changes,
+			BinaryFiles: c.BinaryFiles,
+			Deletions:   c.Deletions,
+			Account:     res.Account,
+			Region:      res.Region,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	dc, err := runtimeManager.GetDepChanges()
 	if err != nil {
-		fmt.Print("get dep changes:", err)
 		return err
 	}
 	runtimeManager.StoreState()
