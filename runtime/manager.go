@@ -423,9 +423,9 @@ func (m *Manager) readAll() (*StateChanges, error) {
 		}
 
 		if isBinary {
-			sc.Changes[filepath.ToSlash(path)] = string(contents)
-		} else {
 			sc.BinaryFiles[filepath.ToSlash(path)] = base64.StdEncoding.EncodeToString(contents)
+		} else {
+			sc.Changes[filepath.ToSlash(path)] = string(contents)
 		}
 		return nil
 	})
@@ -649,7 +649,7 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 		if l != "" && !strings.HasPrefix(l, "#") {
 			vars := strings.Split(l, "=")
 			if len(vars) != 2 {
-				return nil, fmt.Errorf("Env file has invalid format")
+				return nil, fmt.Errorf("env file has invalid format")
 			}
 			envs[vars[0]] = vars[1]
 		}
