@@ -645,17 +645,18 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 		return nil, nil
 	}
 	lines := strings.Split(string(contents), NewLine)
-	// expect format KEY=VALUE
 	envs := make(map[string]string)
-	for _, l := range lines {
-		l = strings.ReplaceAll(l, " ", "")
+	for n, l := range lines {
 		// skip empty lines and commentes #
 		if l != "" && !strings.HasPrefix(l, "#") {
-			vars := strings.Split(l, "=")
-			if len(vars) != 2 {
-				return nil, fmt.Errorf("env file has invalid format")
+			sepIndex := strings.Index(l, "=")
+			// expect format KEY=VALUE
+			if sepIndex <= 0 {
+				return nil, fmt.Errorf("unexpected format in line %d, expected KEY=VALUE", n+1)
 			}
-			envs[vars[0]] = vars[1]
+			key := l[0:sepIndex]
+			value := l[sepIndex+1 : len(l)]
+			envs[key] = value
 		}
 	}
 	return envs, nil
