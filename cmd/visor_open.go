@@ -49,13 +49,9 @@ func visorOpen(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf(fmt.Sprintf("no deta micro present in '%s'", wd))
 	}
 
-	userInfo, err := runtimeManager.GetUserInfo()
+	userInfo, err := getUserInfo(runtimeManager, client)
 	if err != nil {
 		return err
-	}
-
-	if userInfo == nil {
-		return fmt.Errorf("login required, login with 'deta login'")
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()
