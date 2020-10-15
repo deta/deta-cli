@@ -133,7 +133,7 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 			signature, err := authManager.CalcSignature(&auth.CalcSignatureInput{
 				AccessToken: tokens.DetaAccessToken,
 				HTTPMethod:  i.Method,
-				URL:         req.URL.String(),
+				URI:         req.URL.RequestURI(),
 				Timestamp:   timestamp,
 				ContentType: i.ContentType,
 				RawBody:     marshalled,

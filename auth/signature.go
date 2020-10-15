@@ -17,7 +17,7 @@ var (
 type CalcSignatureInput struct {
 	AccessToken string
 	HTTPMethod  string
-	URL         string
+	URI         string
 	Timestamp   string
 	ContentType string
 	RawBody     []byte
@@ -39,7 +39,7 @@ func (m *Manager) CalcSignature(i *CalcSignatureInput) (string, error) {
 
 	stringToSign := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n",
 		i.HTTPMethod,
-		i.URL,
+		i.URI,
 		i.Timestamp,
 		i.ContentType,
 		i.RawBody,
