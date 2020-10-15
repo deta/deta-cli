@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/deta/deta-cli/auth"
 )
@@ -74,9 +76,17 @@ type requestOutput struct {
 
 // Request send an http request to the deta api
 func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
-	marshalled, err := json.Marshal(&i.Body)
-	if err != nil {
-		return nil, err
+	marshalled := []byte("")
+	if i.Body != nil {
+		// default set content-type to application/json
+		if i.ContentType == "" {
+			i.ContentType = "application/json"
+		}
+		var err error
+		marshalled, err = json.Marshal(&i.Body)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	req, err := http.NewRequest(i.Method, fmt.Sprintf("%s%s", d.rootEndpoint, i.Path), bytes.NewBuffer(marshalled))
@@ -84,28 +94,10 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 		return nil, err
 	}
 
-	// auth
-	if i.NeedsAuth {
-		authManager := auth.NewManager()
-		tokens, err := authManager.GetTokens()
-		if err != nil {
-			if os.IsNotExist(err) || errors.Is(err, auth.ErrRefreshTokenInvalid) {
-				return nil, fmt.Errorf("login required")
-			}
-			return nil, fmt.Errorf("failed to authorize")
-		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokens.AccessToken))
-	}
-
-	if i.Body != nil {
-		// default set to application/json
-		req.Header.Set("Content-type", "application/json")
-		if i.ContentType != "" {
-			req.Header.Set("Content-type", i.ContentType)
-		}
-	}
-
 	// headers
+	if i.ContentType != "" {
+		req.Header.Set("Content-type", i.ContentType)
+	}
 	for k, v := range i.Headers {
 		req.Header.Set(k, v)
 	}
@@ -116,6 +108,45 @@ func (d *DetaClient) request(i *requestInput) (*requestOutput, error) {
 		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
+
+	// auth
+	if i.NeedsAuth {
+		authManager := auth.NewManager()
+		tokens, err := authManager.GetTokens()
+		if err != nil {
+			if errors.Is(err, auth.ErrRefreshTokenInvalid) {
+				return nil, fmt.Errorf("auth token expired, re-login required")
+			}
+			if errors.Is(err, auth.ErrNoAuthTokenFound) {
+				return nil, fmt.Errorf("no auth token found, login with deta login or provide access token")
+			}
+			return nil, fmt.Errorf("failed to authorize")
+		}
+		if authManager.IsBearerAuth() {
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokens.AccessToken))
+		} else {
+			//  request timestamp
+			now := time.Now().UTC().Unix()
+			timestamp := strconv.FormatInt(now, 10)
+
+			// compute signature
+			signature, err := authManager.CalcSignature(&auth.CalcSignatureInput{
+				AccessToken: tokens.DetaAccessToken,
+				HTTPMethod:  i.Method,
+				URL:         req.URL.String(),
+				Timestamp:   timestamp,
+				ContentType: i.ContentType,
+				RawBody:     marshalled,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			// set needed access key auth headers
+			req.Header.Set("X-Deta-Timestamp", timestamp)
+			req.Header.Set("X-Deta-Signature", signature)
+		}
+	}
 
 	res, err := d.client.Do(req)
 	if err != nil {
