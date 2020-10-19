@@ -127,14 +127,9 @@ func new(cmd *cobra.Command, args []string) error {
 	}
 
 	// get user information
-	userInfo, err := runtimeManager.GetUserInfo()
+	userInfo, err := getUserInfo(runtimeManager, client)
 	if err != nil {
-		fmt.Print("Get user info:", err)
 		return err
-	}
-
-	if userInfo == nil {
-		return fmt.Errorf("login required, log in with 'deta login'")
 	}
 
 	project := userInfo.DefaultProject

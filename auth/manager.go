@@ -26,8 +26,9 @@ import (
 )
 
 const (
-	detaDir       = ".deta"
-	authTokenPath = ".deta/tokens"
+	detaDir            = ".deta"
+	authTokenPath      = ".deta/tokens"
+	detaAccessTokenEnv = "DETA_ACCESS_TOKEN"
 )
 
 var (
@@ -41,21 +42,27 @@ var (
 
 	// ErrRefreshTokenInvalid refresh token invalid
 	ErrRefreshTokenInvalid = errors.New("refresh token is invalid")
+	// ErrNoAuthTokenFound no access token found
+	ErrNoAuthTokenFound = errors.New("no auth token found")
+	// ErrInvalidAccessToken invalid access token
+	ErrInvalidAccessToken = errors.New("invalid access token")
 )
 
-// CognitoToken aws congito tokens
-type CognitoToken struct {
-	AccessToken  string `json:"access_token"`
-	IDToken      string `json:"id_token"`
-	RefreshToken string `json:"refresh_token"`
-	Expires      int64  `json:"expires"`
+// Token aws cognito token or access keys
+type Token struct {
+	AccessToken     string `json:"access_token"`
+	IDToken         string `json:"id_token"`
+	RefreshToken    string `json:"refresh_token"`
+	Expires         int64  `json:"expires"`
+	DetaAccessToken string `json:"deta_access_token"`
 }
 
 // Manager manages aws cognito authentication
 type Manager struct {
-	srv       *http.Server
-	tokenChan chan *CognitoToken
-	errChan   chan error
+	bearerAuth bool
+	srv        *http.Server
+	tokenChan  chan *Token
+	errChan    chan error
 }
 
 // NewManager returns a new auth Manager
@@ -63,14 +70,15 @@ func NewManager() *Manager {
 	srv := &http.Server{}
 
 	return &Manager{
-		tokenChan: make(chan *CognitoToken, 1),
-		errChan:   make(chan error, 1),
-		srv:       srv,
+		bearerAuth: true,
+		tokenChan:  make(chan *Token, 1),
+		errChan:    make(chan error, 1),
+		srv:        srv,
 	}
 }
 
 // stores tokens in file ~/.deta/tokens
-func (m *Manager) storeTokens(tokens *CognitoToken) error {
+func (m *Manager) storeTokens(tokens *Token) error {
 	expiresIn, err := m.expiresFromToken(tokens.AccessToken)
 	if err != nil {
 		return err
@@ -132,13 +140,16 @@ func (m *Manager) expiresFromToken(accessToken string) (int64, error) {
 }
 
 // checks if token is already expired
-func (m *Manager) isTokenExpired(token *CognitoToken) bool {
+func (m *Manager) isTokenExpired(token *Token) bool {
+	if !m.bearerAuth {
+		return false
+	}
 	unixTime := time.Now().Unix()
 	return token.Expires < unixTime
 }
 
-// getTokens retrieves the tokens from storage
-func (m *Manager) getTokens() (*CognitoToken, error) {
+// getTokens retrieves the tokens from storage or env var
+func (m *Manager) getTokens() (*Token, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, nil
@@ -146,25 +157,45 @@ func (m *Manager) getTokens() (*CognitoToken, error) {
 
 	tokensFilePath := filepath.Join(home, authTokenPath)
 	f, err := os.Open(tokensFilePath)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
 	defer f.Close()
 
-	contents, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
+	// ignoring errors here
+	// as we fall back to retrieving acces token from env
+	// if not found in env then will finally return an error
+	var tokens Token
+	contents, _ := ioutil.ReadAll(f)
+	json.Unmarshal(contents, &tokens)
+
+	// first priority to aws access token
+	if tokens.AccessToken != "" {
+		return &tokens, nil
 	}
-	var tokens CognitoToken
-	err = json.Unmarshal(contents, &tokens)
-	if err != nil {
-		return nil, err
+
+	// if no congito token
+	m.bearerAuth = false
+
+	// check the env first for deta access token
+	detaAccessToken := os.Getenv(detaAccessTokenEnv)
+
+	// if not in env, check from tokens retreived from file
+	if detaAccessToken == "" {
+		detaAccessToken = tokens.DetaAccessToken
 	}
-	return &tokens, nil
+
+	// if still no token found, return err
+	if detaAccessToken == "" {
+		return nil, ErrNoAuthTokenFound
+	}
+	return &Token{
+		DetaAccessToken: detaAccessToken,
+	}, nil
 }
 
 // refreshes the tokens
-func (m *Manager) refreshTokens() (*CognitoToken, error) {
+func (m *Manager) refreshTokens() (*Token, error) {
 	tokens, err := m.getTokens()
 	if err != nil {
 		return nil, err
@@ -201,7 +232,7 @@ func (m *Manager) refreshTokens() (*CognitoToken, error) {
 		return nil, fmt.Errorf("failed to refresh auth tokens")
 	}
 
-	newTokens := &CognitoToken{
+	newTokens := &Token{
 		AccessToken:  *authResult.AccessToken,
 		IDToken:      *authResult.IdToken,
 		RefreshToken: tokens.RefreshToken,
@@ -213,9 +244,9 @@ func (m *Manager) refreshTokens() (*CognitoToken, error) {
 	return newTokens, nil
 }
 
-// GetTokens gets tokens from local storage if not expired
+// GetTokens gets tokens from env var or local storage if not expired
 // else refreshes the tokens first and then provides the new tokens
-func (m *Manager) GetTokens() (*CognitoToken, error) {
+func (m *Manager) GetTokens() (*Token, error) {
 	tokens, err := m.getTokens()
 	if err != nil {
 		return nil, err
@@ -247,6 +278,11 @@ func (m *Manager) Login() error {
 		return err
 	}
 	return nil
+}
+
+// IsBearerAuth check if token auth type is bearer
+func (m *Manager) IsBearerAuth() bool {
+	return m.bearerAuth
 }
 
 func (m *Manager) openLoginPage() error {
@@ -286,7 +322,7 @@ func (m *Manager) tokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var tokens CognitoToken
+	var tokens Token
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		serverError(w, err)
