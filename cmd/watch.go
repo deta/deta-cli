@@ -52,6 +52,12 @@ func watch(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// do an initial deployment
+	err = deployChanges(runtimeManager, progInfo, true)
+	if err != nil {
+		return err
+	}
+
 	c := make(chan notify.EventInfo, 1)
 
 	// {dir}/... watch dir recursively
