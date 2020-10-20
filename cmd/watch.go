@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/deta/deta-cli/runtime"
 	"github.com/rjeczalik/notify"
@@ -51,6 +52,12 @@ func watch(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// do an initial deployment
+	err = deployChanges(runtimeManager, progInfo, true)
+	if err != nil {
+		return err
+	}
+
 	c := make(chan notify.EventInfo, 1)
 
 	// {dir}/... watch dir recursively
@@ -61,6 +68,7 @@ func watch(cmd *cobra.Command, args []string) error {
 	fmt.Println("Watching changes")
 	for {
 		<-c
+		time.Sleep(100 * time.Millisecond)
 		err := deployChanges(runtimeManager, progInfo, true)
 		if err != nil {
 			return err

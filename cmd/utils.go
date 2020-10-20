@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/deta/deta-cli/api"
 	"github.com/deta/deta-cli/runtime"
 )
 
@@ -73,4 +74,31 @@ func inSlice(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// get user info from local storage if cached otherwise from server
+// saves user info to local storage if not cached
+func getUserInfo(rm *runtime.Manager, client *api.DetaClient) (*runtime.UserInfo, error) {
+	u, err := rm.GetUserInfo()
+	if err != nil {
+		return nil, err
+	}
+	if u != nil {
+		return u, nil
+	}
+
+	// fall back to server
+	userInfo, err := client.GetUserInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	// save user info
+	u = &runtime.UserInfo{
+		DefaultSpace:     userInfo.DefaultSpace,
+		DefaultSpaceName: userInfo.DefaultSpaceName,
+		DefaultProject:   userInfo.DefaultProject,
+	}
+	go rm.StoreUserInfo(u)
+	return u, nil
 }

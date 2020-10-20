@@ -24,7 +24,8 @@ func login(cmd *cobra.Command, args []string) error {
 	if err := authManager.Login(); err != nil {
 		return err
 	}
-	resp, err := client.ListSpaces()
+
+	u, err := client.GetUserInfo()
 	if err != nil {
 		return err
 	}
@@ -34,16 +35,11 @@ func login(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	u := &runtime.UserInfo{
-		DefaultSpace:     resp[0].SpaceID,
-		DefaultSpaceName: resp[0].Name,
-		DefaultProject:   runtime.DefaultProject,
-	}
-
-	err = runtimeManager.StoreUserInfo(u)
-	if err != nil {
-		return err
-	}
+	runtimeManager.StoreUserInfo(&runtime.UserInfo{
+		DefaultSpace:     u.DefaultSpace,
+		DefaultSpaceName: u.DefaultSpaceName,
+		DefaultProject:   u.DefaultProject,
+	})
 	fmt.Println("Logged in successfully.")
 	return nil
 }

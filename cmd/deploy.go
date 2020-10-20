@@ -44,7 +44,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if !isInitialized {
-		return fmt.Errorf("deta micro not initilialized. see `deta new --help` to create a micro")
+		return fmt.Errorf("no deta micro initilialized, see `deta new --help` to create a micro")
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()

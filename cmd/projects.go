@@ -27,13 +27,9 @@ func listProjects(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	u, err := runtimeManager.GetUserInfo()
+	u, err := getUserInfo(runtimeManager, client)
 	if err != nil {
 		return err
-	}
-
-	if u == nil {
-		return fmt.Errorf("login required, login in `deta login`")
 	}
 
 	res, err := client.GetProjects(&api.GetProjectsRequest{

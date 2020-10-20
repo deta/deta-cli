@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/deta/deta-cli/runtime"
 )
 
 // injects X-Resource-Addr header from account and region
@@ -791,4 +793,25 @@ func (c *DetaClient) GetSchedule(req *GetScheduleRequest) (*GetScheduleResponse,
 		return nil, err
 	}
 	return &resp, nil
+}
+
+// GetUserInfoResponse response to GetUserInfo request
+type GetUserInfoResponse struct {
+	DefaultSpace     int64
+	DefaultSpaceName string
+	DefaultProject   string
+}
+
+// GetUserInfo gets user info
+func (c *DetaClient) GetUserInfo() (*GetUserInfoResponse, error) {
+	resp, err := c.ListSpaces()
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetUserInfoResponse{
+		DefaultSpace:     resp[0].SpaceID,
+		DefaultSpaceName: resp[0].Name,
+		DefaultProject:   runtime.DefaultProject,
+	}, nil
 }

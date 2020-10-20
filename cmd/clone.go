@@ -83,16 +83,9 @@ func clone(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	u, err := runtimeManager.GetUserInfo()
+	u, err := getUserInfo(runtimeManager, client)
 	if err != nil {
-		cleanup(wd)
 		return err
-	}
-
-	if u == nil {
-		fmt.Println("login required, log in with `deta login`")
-		cleanup(wd)
-		return nil
 	}
 
 	if projectName == "" {

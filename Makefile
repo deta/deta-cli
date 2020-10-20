@@ -1,15 +1,16 @@
-DETA_VERSION = v1.1.1-beta
+DETA_VERSION = v1.1.2-beta
 LINUX_PLATFORM = x86_64-linux
 MAC_PLATFORM = x86_64-darwin
 WINDOWS_PLATFORM = x86_64-windows
 
 LDFLAGS := -X github.com/deta/deta-cli/cmd.detaVersion=$(DETA_VERSION) $(LDFLAGS)
+LDFLAGS := -X github.com/deta/deta-cli/cmd.gatewayDomain=$(GATEWAY_DOMAIN) $(LDFLAGS)
+LDFLAGS := -X github.com/deta/deta-cli/cmd.visorURL=$(VISOR_URL) $(LDFLAGS)
 LDFLAGS := -X github.com/deta/deta-cli/auth.loginURL=$(LOGIN_URL) $(LDFLAGS)
 LDFLAGS := -X github.com/deta/deta-cli/auth.cognitoClientID=$(COGNITO_CLIENT_ID) $(LDFLAGS)
 LDFLAGS := -X github.com/deta/deta-cli/auth.cognitoRegion=$(COGNITO_REGION) $(LDFLAGS)
+LDFLAGS := -X github.com/deta/deta-cli/auth.detaSignVersion=$(DETA_SIGN_VERSION) $(LDFLAGS)
 LDFLAGS := -X github.com/deta/deta-cli/api.version=$(DETA_VERSION) $(LDFLAGS)
-LDFLAGS := -X github.com/deta/deta-cli/cmd.gatewayDomain=$(GATEWAY_DOMAIN) $(LDFLAGS)
-LDFLAGS := -X github.com/deta/deta-cli/cmd.visorURL=$(VISOR_URL) $(LDFLAGS)
 
 .PHONY: build clean
 
