@@ -271,7 +271,8 @@ func (m *Manager) Login() error {
 	}
 	err = m.openLoginPage()
 	if err != nil {
-		return err
+		fmt.Println("Failed to open the login page, open the following link in your browser:")
+		fmt.Println(loginURL)
 	}
 	err = m.retrieveTokensFromServer()
 	if err != nil {
