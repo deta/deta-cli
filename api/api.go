@@ -815,3 +815,57 @@ func (c *DetaClient) GetUserInfo() (*GetUserInfoResponse, error) {
 		DefaultProject:   runtime.DefaultProject,
 	}, nil
 }
+
+// GetLogsRequest to a micro
+type GetLogsRequest struct {
+	ProgramID string
+	Start     int64
+	End       int64
+}
+
+// LogType is a single log record from api
+type LogType struct {
+	Timestamp int64
+	Log       string
+}
+
+// GetLogsResponse from a micro
+type GetLogsResponse struct {
+	Logs []LogType
+}
+
+func (c *DetaClient) GetLogs(req *GetLogsRequest) (*GetLogsResponse, error) {
+	r := &requestInput{
+		Path:      fmt.Sprintf("/programs/%s/logs", req.ProgramID),
+		Method:    "GET",
+		NeedsAuth: true,
+		QueryParams: map[string]string{
+			"start": fmt.Sprint(req.Start),
+			"end":   fmt.Sprint(req.End),
+		},
+	}
+
+	res, err := c.request(r)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.Status != 200 {
+		msg := res.Error.Message
+		if msg == "" {
+			msg = res.Error.Errors[0]
+		}
+
+		return nil, fmt.Errorf("failed to get logs: %v", msg)
+	}
+
+	result := &GetLogsResponse{
+		Logs: make([]LogType, 0),
+	}
+	err = json.Unmarshal(res.Body, result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
