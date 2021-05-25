@@ -291,24 +291,32 @@ func (m *Manager) isHidden(path string) (bool, error) {
 		return isHiddenWindows(path)
 	default:
 		_, filename := filepath.Split(path)
-		return strings.HasPrefix(filename, ".") && filename != ignoreFile && filename != ".", nil
+		return strings.HasPrefix(filename, ".") && filename != ".", nil
 	}
 }
 
 // should skip if the file or dir should be skipped
 func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
+	// do not skip .detaignore file
+	if regexp.MustCompile(ignoreFile).MatchString(path) {
+		return false, nil
+	}
+
 	hidden, err := m.isHidden(path)
 	if err != nil {
 		return false, err
 	}
+
 	if hidden {
 		return true, nil
 	}
+
 	for _, re := range m.skipPaths[runtime] {
-		if match := re.MatchString(path); match {
+		if re.MatchString(path) {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
