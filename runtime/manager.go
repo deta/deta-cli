@@ -19,6 +19,7 @@ import (
 )
 
 const (
+	SPACE = " "
 	// Python runtime
 	Python = "python3.7"
 	// Node runtime
@@ -156,7 +157,10 @@ func (m *Manager) handleIgnoreFile() error {
 	}
 
 	for _, line := range strings.Split(string(lines), "\n") {
-		m.skipPaths[runtime] = append([]*regexp.Regexp{regexp.MustCompile(line)}, m.skipPaths[runtime]...)
+		line = strings.Trim(line, SPACE)
+		if len(line) != 0 {
+			m.skipPaths[runtime] = append([]*regexp.Regexp{regexp.MustCompile(line)}, m.skipPaths[runtime]...)
+		}
 	}
 
 	return nil
@@ -300,7 +304,7 @@ func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
 	if hidden {
 		return true, nil
 	}
-	for _, re := range skipPaths[runtime] {
+	for _, re := range m.skipPaths[runtime] {
 		if match := re.MatchString(path); match {
 			return true, nil
 		}
