@@ -71,16 +71,29 @@ func logs(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	res, err := client.GetLogs(&api.GetLogsRequest{
-		ProgramID: progInfo.ID,
-		Start:     startTime,
-		End:       endTime,
-	})
-	if err != nil {
-		return err
+	lastToken := ""
+
+	logs := make([]api.LogType, 0)
+	for {
+		res, err := client.GetLogs(&api.GetLogsRequest{
+			ProgramID: progInfo.ID,
+			Start:     startTime,
+			End:       endTime,
+			LastToken: lastToken,
+		})
+		if err != nil {
+			return err
+		}
+		logs = append(logs, res.Logs...)
+
+		if len(res.LastToken) == 0 {
+			break
+		}
+
+		lastToken = res.LastToken
 	}
 
-	for _, log := range res.Logs {
+	for _, log := range logs {
 		printLogs(log.Timestamp, log.Log)
 	}
 

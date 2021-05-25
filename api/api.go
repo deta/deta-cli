@@ -821,17 +821,19 @@ type GetLogsRequest struct {
 	ProgramID string
 	Start     int64
 	End       int64
+	LastToken string
 }
 
 // LogType is a single log record from api
 type LogType struct {
-	Timestamp int64
-	Log       string
+	Timestamp int64  `json:"timestamp"`
+	Log       string `json:"log"`
 }
 
 // GetLogsResponse from a micro
 type GetLogsResponse struct {
-	Logs []LogType
+	LastToken string    `json:"last_token"`
+	Logs      []LogType `json:"logs"`
 }
 
 func (c *DetaClient) GetLogs(req *GetLogsRequest) (*GetLogsResponse, error) {
@@ -840,8 +842,9 @@ func (c *DetaClient) GetLogs(req *GetLogsRequest) (*GetLogsResponse, error) {
 		Method:    "GET",
 		NeedsAuth: true,
 		QueryParams: map[string]string{
-			"start": fmt.Sprint(req.Start),
-			"end":   fmt.Sprint(req.End),
+			"start":      fmt.Sprint(req.Start),
+			"end":        fmt.Sprint(req.End),
+			"last_token": req.LastToken,
 		},
 	}
 
