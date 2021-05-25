@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/deta/deta-cli/api"
 	"github.com/deta/deta-cli/runtime"
@@ -79,7 +80,14 @@ func logs(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Println(res.Logs)
+	for _, log := range res.Logs {
+		printLogs(log.Timestamp, log.Log)
+	}
 
 	return nil
+}
+
+func printLogs(timestamp int64, message string) {
+	strDateTime := time.Time(time.Unix(0, timestamp*int64(time.Millisecond))).Format(time.RFC3339)
+	fmt.Printf("[%s]%s", strDateTime, message)
 }
