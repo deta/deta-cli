@@ -55,6 +55,8 @@ var (
 			regexp.MustCompile("__pycache__"),
 			regexp.MustCompile(".*~$"), // vim swap files
 			regexp.MustCompile(`.*\.deta`),
+			regexp.MustCompile(`env`),
+			regexp.MustCompile(`venv`),
 		},
 		Node: {
 			regexp.MustCompile("node_modules"),
