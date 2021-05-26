@@ -32,25 +32,26 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 }
 
-type latestRelease struct {
-	Tag string `json:"tag_name"`
+type LatestRelease struct {
+	Tag        string `json:"tag_name"`
+	Prerelease bool   `json:"prerelease"`
 }
 
-func getLatestVersionTag() (string, error) {
+func getLatestVersion() (*LatestRelease, error) {
 	resp, err := http.Get(fmt.Sprintf("%s/releases/latest", githubRepoRoot))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var lr latestRelease
-	err = json.Unmarshal(body, &lr)
+	lr := &LatestRelease{}
+	err = json.Unmarshal(body, lr)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return lr.Tag, nil
+	return lr, nil
 }
 
 func checkVersionExists(tag string) (bool, error) {
@@ -74,14 +75,14 @@ type checkVersionMsg struct {
 
 func checkVersion(c chan *checkVersionMsg) {
 	cm := &checkVersionMsg{}
-	latestVersion, err := getLatestVersionTag()
+	latestVersion, err := getLatestVersion()
 	if err != nil {
 		fmt.Println("error in get latest version tag: ", err)
 		cm.err = err
 		c <- cm
 		return
 	}
-	cm.isLower = detaVersion != latestVersion
+	cm.isLower = detaVersion != latestVersion.Tag && !latestVersion.Prerelease
 	cm.err = nil
 	c <- cm
 	return

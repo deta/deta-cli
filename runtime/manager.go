@@ -655,8 +655,8 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 				return nil, fmt.Errorf("unexpected format in line %d, expected KEY=VALUE", n+1)
 			}
 			key := l[0:sepIndex]
-			value := l[sepIndex+1 : len(l)]
-			envs[key] = value
+			value := l[sepIndex+1:]
+			envs[key] = strings.Trim(value, "\"")
 		}
 	}
 	return envs, nil
