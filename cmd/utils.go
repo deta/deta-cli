@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/deta/deta-cli/api"
 	"github.com/deta/deta-cli/runtime"
@@ -101,4 +103,18 @@ func getUserInfo(rm *runtime.Manager, client *api.DetaClient) (*runtime.UserInfo
 	}
 	go rm.StoreUserInfo(u)
 	return u, nil
+}
+
+func parseDateTime(str string) (int64, error) {
+	str = strings.Trim(str, SPACE)
+	if len(str) != 0 {
+		dateTime, err := time.Parse(time.RFC3339, str)
+		if err != nil {
+			return 0, fmt.Errorf("invalid date time format(RFC3339) %s", str)
+		}
+
+		return dateTime.UnixNano() / int64(time.Millisecond), nil
+	}
+
+	return 0, nil
 }
