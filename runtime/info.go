@@ -29,8 +29,6 @@ type ProgInfo struct {
 	Public  bool     `json:"public"`
 	Visor   string   `json:"log_level"`
 	Cron    string   `json:"cron"`
-	// to decide whether to reload the deps later while updating
-	ReloadDeps bool `json:"reload_deps"`
 }
 
 // unmarshals data into a ProgInfo
