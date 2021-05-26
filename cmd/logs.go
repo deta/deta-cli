@@ -26,9 +26,6 @@ var (
 )
 
 func init() {
-	logsCmd.Flags().StringVar(&start, "start", "", "logs start time 'format: RFC3339'")
-	logsCmd.Flags().StringVar(&end, "end", "", "logs end time 'format: RFC3339'")
-
 	rootCmd.AddCommand(logsCmd)
 }
 
@@ -61,24 +58,12 @@ func logs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get micro information")
 	}
 
-	startTime, err := parseDateTime(start)
-	if err != nil {
-		return err
-	}
-
-	endTime, err := parseDateTime(end)
-	if err != nil {
-		return err
-	}
-
 	lastToken := ""
 
 	logs := make([]api.LogType, 0)
 	for {
 		res, err := client.GetLogs(&api.GetLogsRequest{
 			ProgramID: progInfo.ID,
-			Start:     startTime,
-			End:       endTime,
 			LastToken: lastToken,
 		})
 		if err != nil {
@@ -102,5 +87,5 @@ func logs(cmd *cobra.Command, args []string) error {
 
 func printLogs(timestamp int64, message string) {
 	strDateTime := time.Time(time.Unix(0, timestamp*int64(time.Millisecond))).Format(time.RFC3339)
-	fmt.Printf("[%s]%s", strDateTime, message)
+	fmt.Printf("[%s]%s\n", strDateTime, message)
 }
