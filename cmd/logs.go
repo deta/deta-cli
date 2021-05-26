@@ -87,5 +87,5 @@ func logs(cmd *cobra.Command, args []string) error {
 
 func printLogs(timestamp int64, message string) {
 	strDateTime := time.Time(time.Unix(0, timestamp*int64(time.Millisecond))).Format(time.RFC3339)
-	fmt.Printf("[%s]%s\n", strDateTime, message)
+	fmt.Printf("[%s] %s\n", strDateTime, message)
 }
