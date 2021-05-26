@@ -158,7 +158,7 @@ func (m *Manager) handleIgnoreFile() error {
 		return err
 	}
 
-	for _, line := range strings.Split(string(lines), "\n") {
+	for _, line := range strings.Split(string(lines), NewLine) {
 		line = strings.Trim(line, SPACE)
 		if len(line) != 0 {
 			m.skipPaths[runtime] = append([]*regexp.Regexp{regexp.MustCompile(line)}, m.skipPaths[runtime]...)
