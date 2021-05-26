@@ -19,6 +19,7 @@ import (
 )
 
 const (
+	SPACE = " "
 	// Python runtime
 	Python = "python3.7"
 	// Node runtime
@@ -48,17 +49,19 @@ var (
 
 	// skipPaths maps runtimes to paths that should be skipped
 	skipPaths = map[string][]*regexp.Regexp{
-		Python: []*regexp.Regexp{
-			regexp.MustCompile(".*\\.pyc"),
-			regexp.MustCompile(".*\\.rst"),
+		Python: {
+			regexp.MustCompile(`.*\.pyc`),
+			regexp.MustCompile(`.*\.rst`),
 			regexp.MustCompile("__pycache__"),
 			regexp.MustCompile(".*~$"), // vim swap files
-			regexp.MustCompile(".*\\.deta"),
+			regexp.MustCompile(`.*\.deta`),
+			regexp.MustCompile(`env`),
+			regexp.MustCompile(`venv`),
 		},
-		Node: []*regexp.Regexp{
+		Node: {
 			regexp.MustCompile("node_modules"),
 			regexp.MustCompile(".*~$"), // vim swap files
-			regexp.MustCompile(".*\\.deta"),
+			regexp.MustCompile(`.*\.deta`),
 		},
 	}
 
@@ -67,6 +70,7 @@ var (
 	userInfoFile = "user_info"
 	progInfoFile = "prog_info"
 	stateFile    = "state"
+	ignoreFile   = ".detaignore"
 
 	// DepCommands maps runtimes to the dependency managers
 	DepCommands = map[string]string{
@@ -82,11 +86,13 @@ var (
 
 // Manager runtime manager handles files management and other services
 type Manager struct {
-	rootDir      string // working directory for the program
-	detaPath     string // dir for storing program info and state
-	userInfoPath string // path to info file about the user
-	progInfoPath string // path to info file about the program
-	statePath    string // path to state file about the program
+	rootDir      string                      // working directory for the program
+	detaPath     string                      // dir for storing program info and state
+	userInfoPath string                      // path to info file about the user
+	progInfoPath string                      // path to info file about the program
+	statePath    string                      // path to state file about the program
+	ignorePath   string                      // path to .detaignore file
+	skipPaths    map[string][]*regexp.Regexp // files that will be skipped
 }
 
 // NewManager returns a new runtime manager for the root dir of the program
@@ -123,13 +129,43 @@ func NewManager(root *string, initDirs bool) (*Manager, error) {
 	}
 	userInfoPath := filepath.Join(home, detaDir, userInfoFile)
 
-	return &Manager{
+	ignorePath := filepath.Join(rootDir, ignoreFile)
+
+	manager := &Manager{
 		rootDir:      rootDir,
 		detaPath:     detaPath,
 		userInfoPath: userInfoPath,
 		progInfoPath: filepath.Join(detaPath, progInfoFile),
 		statePath:    filepath.Join(detaPath, stateFile),
-	}, nil
+		skipPaths:    skipPaths,
+		ignorePath:   ignorePath,
+	}
+
+	// not handling error as we don't want cli to crash if .detaignore is not found
+	manager.handleIgnoreFile()
+
+	return manager, nil
+}
+
+func (m *Manager) handleIgnoreFile() error {
+	runtime, err := m.GetRuntime()
+	if err != nil {
+		return err
+	}
+
+	lines, _, err := m.readFile(m.ignorePath)
+	if err != nil {
+		return err
+	}
+
+	for _, line := range strings.Split(string(lines), NewLine) {
+		line = strings.Trim(line, SPACE)
+		if len(line) != 0 {
+			m.skipPaths[runtime] = append([]*regexp.Regexp{regexp.MustCompile(line)}, m.skipPaths[runtime]...)
+		}
+	}
+
+	return nil
 }
 
 // StoreProgInfo stores program info to disk
@@ -236,7 +272,7 @@ func (m *Manager) GetRuntime() (string, error) {
 				found = true
 				runtime = r
 			} else {
-				return errors.New("Conflicting entrypoint files found")
+				return errors.New("conflicting entrypoint files found")
 			}
 		}
 		return nil
@@ -263,18 +299,26 @@ func (m *Manager) isHidden(path string) (bool, error) {
 
 // should skip if the file or dir should be skipped
 func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
+	// do not skip .detaignore file
+	if regexp.MustCompile(ignoreFile).MatchString(path) {
+		return false, nil
+	}
+
 	hidden, err := m.isHidden(path)
 	if err != nil {
 		return false, err
 	}
+
 	if hidden {
 		return true, nil
 	}
-	for _, re := range skipPaths[runtime] {
-		if match := re.MatchString(path); match {
+
+	for _, re := range m.skipPaths[runtime] {
+		if re.MatchString(path) {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 

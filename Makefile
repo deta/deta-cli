@@ -1,6 +1,8 @@
 DETA_VERSION = DEV
 LINUX_PLATFORM = x86_64-linux
+LINUX_ARM_PLATFORM= arm64-linux
 MAC_PLATFORM = x86_64-darwin
+MAC_ARM_PLATFORM = arm64-darwin
 WINDOWS_PLATFORM = x86_64-windows
 
 LDFLAGS := -X github.com/deta/deta-cli/cmd.detaVersion=$(DETA_VERSION) $(LDFLAGS)
@@ -14,9 +16,15 @@ LDFLAGS := -X github.com/deta/deta-cli/api.version=$(DETA_VERSION) $(LDFLAGS)
 
 .PHONY: build clean
 
+
+
 build-linux:
-	go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(LINUX_PLATFORM)" -o build/deta	
+	GOOS=linux GOARCH=amd64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(LINUX_PLATFORM)" -o build/deta	
 	cd build && zip -FSr deta-$(LINUX_PLATFORM).zip deta
+
+build-linux-arm:
+	GOOS=linux GOARCH=arm64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(LINUX_ARM_PLATFORM)" -o build/deta	
+	cd build && zip -FSr deta-$(LINUX_ARM_PLATFORM).zip deta
 
 build-win:
 	GOOS=windows GOARCH=amd64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(WINDOWS_PLATFORM)" -o build/deta.exe	
@@ -26,7 +34,11 @@ build-mac:
 	GOOS=darwin GOARCH=amd64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(MAC_PLATFORM)" -o build/deta	
 	cd build && zip -FSr deta-$(MAC_PLATFORM).zip deta
 
-build: build-linux build-win build-mac
+build-mac-arm:
+	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags="$(LDFLAGS) -X github.com/deta/deta-cli/cmd.platform=$(MAC_ARM_PLATFORM)" -o build/deta	
+	cd build && zip -FSr deta-$(MAC_ARM_PLATFORM).zip deta
+
+build: build-linux build-win build-mac build-mac-arm build-linux-arm
 
 clean:
 	rm -rf build
