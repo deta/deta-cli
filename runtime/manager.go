@@ -19,7 +19,13 @@ import (
 )
 
 const (
-	SPACE = " "
+	SPACE    = " "
+	NEGATION = '!'
+
+	PythonSkipPattern = `(.*\.pyc)|(.*\.rst)|(__pycache__)|(.*~$)|(.*\.deta)|(^.*env$)|(^.*venv$)`
+
+	NodeSkipPattern = `(node_modules)|(.*~$)|(.*\.deta)`
+
 	// Python runtime
 	Python = "python3.7"
 	// Node runtime
@@ -33,6 +39,11 @@ const (
 	// -rw-rw---
 	filePermMode = 0660
 )
+
+type Pattern struct {
+	Value *regexp.Regexp
+	Skip  bool
+}
 
 var (
 	// maps entrypoint files to runtimes
@@ -48,20 +59,18 @@ var (
 	}
 
 	// skipPaths maps runtimes to paths that should be skipped
-	skipPaths = map[string][]*regexp.Regexp{
+	skipPaths = map[string][]Pattern{
 		Python: {
-			regexp.MustCompile(`.*\.pyc`),
-			regexp.MustCompile(`.*\.rst`),
-			regexp.MustCompile("__pycache__"),
-			regexp.MustCompile(".*~$"), // vim swap files
-			regexp.MustCompile(`.*\.deta`),
-			regexp.MustCompile(`env`),
-			regexp.MustCompile(`venv`),
+			Pattern{
+				Value: regexp.MustCompilePOSIX(PythonSkipPattern),
+				Skip:  true,
+			},
 		},
 		Node: {
-			regexp.MustCompile("node_modules"),
-			regexp.MustCompile(".*~$"), // vim swap files
-			regexp.MustCompile(`.*\.deta`),
+			Pattern{
+				Value: regexp.MustCompilePOSIX(NodeSkipPattern),
+				Skip:  true,
+			},
 		},
 	}
 
@@ -86,13 +95,13 @@ var (
 
 // Manager runtime manager handles files management and other services
 type Manager struct {
-	rootDir      string                      // working directory for the program
-	detaPath     string                      // dir for storing program info and state
-	userInfoPath string                      // path to info file about the user
-	progInfoPath string                      // path to info file about the program
-	statePath    string                      // path to state file about the program
-	ignorePath   string                      // path to .detaignore file
-	skipPaths    map[string][]*regexp.Regexp // files that will be skipped
+	rootDir      string               // working directory for the program
+	detaPath     string               // dir for storing program info and state
+	userInfoPath string               // path to info file about the user
+	progInfoPath string               // path to info file about the program
+	statePath    string               // path to state file about the program
+	ignorePath   string               // path to .detaignore file
+	skipPaths    map[string][]Pattern // files that will be skipped
 }
 
 // NewManager returns a new runtime manager for the root dir of the program
@@ -161,7 +170,35 @@ func (m *Manager) handleIgnoreFile() error {
 	for _, line := range strings.Split(string(lines), NewLine) {
 		line = strings.Trim(line, SPACE)
 		if len(line) != 0 {
-			m.skipPaths[runtime] = append([]*regexp.Regexp{regexp.MustCompile(line)}, m.skipPaths[runtime]...)
+			value, err := regexp.CompilePOSIX(line)
+			if err != nil {
+				continue // ignore current line and continue
+			}
+
+			pattern := Pattern{
+				Value: value,
+				Skip:  true,
+			}
+
+			firstChar := line[0]
+			if firstChar == NEGATION {
+				remainingChar := line[1:]
+				if len(remainingChar) == 0 {
+					continue // ignore current line and continue
+				}
+
+				value, err := regexp.CompilePOSIX(remainingChar)
+				if err != nil {
+					continue // ignore current line and continue
+				}
+
+				pattern = Pattern{
+					Value: value,
+					Skip:  false,
+				}
+			}
+
+			m.skipPaths[runtime] = append([]Pattern{pattern}, m.skipPaths[runtime]...)
 		}
 	}
 
@@ -304,22 +341,18 @@ func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
 		return false, nil
 	}
 
+	for _, re := range m.skipPaths[runtime] {
+		if re.Value.MatchString(path) {
+			return re.Skip, nil
+		}
+	}
+
 	hidden, err := m.isHidden(path)
 	if err != nil {
 		return false, err
 	}
 
-	if hidden {
-		return true, nil
-	}
-
-	for _, re := range m.skipPaths[runtime] {
-		if re.MatchString(path) {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return hidden, nil
 }
 
 // reads the contents of a file, returns contents and if file is binary or not
