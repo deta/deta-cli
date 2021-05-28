@@ -256,7 +256,7 @@ func new(cmd *cobra.Command, args []string) error {
 				Project: project,
 			})
 			if err != nil {
-				newProgInfo.ReloadDeps = true
+				return err
 			}
 			newProgInfo.Deps = progDetails.Deps
 			runtimeManager.StoreProgInfo(newProgInfo)

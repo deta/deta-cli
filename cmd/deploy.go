@@ -36,7 +36,11 @@ func deploy(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		wd = args[0]
 	}
+
 	runtimeManager, err := runtime.NewManager(&wd, false)
+	if err != nil {
+		return err
+	}
 
 	isInitialized, err := runtimeManager.IsInitialized()
 	if err != nil {
@@ -64,9 +68,6 @@ func deploy(cmd *cobra.Command, args []string) error {
 
 // reloadDeps gets program details from the server and updates the prog info deps from prog details
 func reloadDeps(m *runtime.Manager, p *runtime.ProgInfo) error {
-	if !p.ReloadDeps {
-		return nil
-	}
 	progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
 		Program: p.ID,
 		Project: p.Project,
@@ -80,7 +81,6 @@ func reloadDeps(m *runtime.Manager, p *runtime.ProgInfo) error {
 	if err != nil {
 		return err
 	}
-	p.ReloadDeps = false
 	return nil
 }
 
@@ -148,26 +148,8 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 				fmt.Println()
 				return fmt.Errorf("failed to update dependecies: error on one or more dependencies, no dependencies were added, see output for details")
 			}
-			progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-				Program: p.ID,
-				Project: p.Project,
-				Space:   p.Space,
-			})
-			// if can't cet program details, set reload deps to true
-			// so that it reloads the deps from the backend on next iteration
-			if err != nil {
-				p.ReloadDeps = true
-				return nil
-			}
-
-			p.Deps = progDetails.Deps
-			m.StoreProgInfo(p)
 		}
 		if len(dc.Removed) > 0 {
-			err = reloadDeps(m, p)
-			if err != nil {
-				return err
-			}
 			uninstallCmd := fmt.Sprintf("%s uninstall", command)
 			for _, d := range dc.Removed {
 				uninstallCmd = fmt.Sprintf("%s %s", uninstallCmd, d)
@@ -184,18 +166,10 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 				fmt.Println()
 				return fmt.Errorf("failed to remove dependecies: error on one or more dependencies, no dependencies were removed, see output for details")
 			}
-			progDetails, err := client.GetProgDetails(&api.GetProgDetailsRequest{
-				Program: p.ID,
-				Project: p.Project,
-				Space:   p.Space,
-			})
-			// if can't get prog details set reload deps to true
-			if err != nil {
-				p.ReloadDeps = true
-				return nil
-			}
-			p.Deps = progDetails.Deps
-			m.StoreProgInfo(p)
+		}
+		err = reloadDeps(m, p)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
