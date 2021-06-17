@@ -67,31 +67,40 @@ func TestManagerStoreTokenAndGetExpiry(t *testing.T) {
 	}
 }
 
-func TestManagerIsTokenExpiredTrue(t *testing.T) {
+func TestManagerIsTokenExpired(t *testing.T) {
 	manager := NewManager()
-	token := Token{
+	expiredToken := Token{
 		AccessToken:     jwt,
 		IDToken:         "idToken",
 		RefreshToken:    "refreshToken",
 		Expires:         0,
 		DetaAccessToken: "aaaaaaaaaaaaaaaaaaaaaaaaaa",
 	}
-	if (!manager.isTokenExpired(&token)) {
-		t.Errorf("Token should have been expired")
-	}
-}
-
-func TestManagerIsTokenExpiredFalse(t *testing.T) {
-	manager := NewManager()
-	token := Token{
+	validToken := Token{
 		AccessToken:     "",
 		IDToken:         "idToken",
 		RefreshToken:    "refreshToken",
 		Expires:         time.Now().Unix()+3000,
 		DetaAccessToken: "aaaaaaaaaaaaaaaaaaaaaaaaaa",
 	}
-	if (manager.isTokenExpired(&token)) {
-		t.Errorf("Token should not be expired")
+
+	var tokentests = []struct {
+		name string
+		token Token
+		valid bool
+	} {
+		{"token_valid",validToken, true},
+		{"token_expired",expiredToken, false},
+	}
+
+	for _, tt := range tokentests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.valid != manager.isTokenExpired(&tt.token) {
+				t.Logf("%s passed", tt.name)
+			} else {
+				t.Errorf("%s failed. Want %t, got %t", tt.name, tt.valid, manager.isTokenExpired(&tt.token))
+			}
+		})
 	}
 }
 
