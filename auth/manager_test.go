@@ -21,23 +21,24 @@ func TestManagerStoreAndRetrieveTokens(t *testing.T) {
 	if (err != nil) {
 		t.Errorf("Error retrieving token: %s", err.Error())
 	}
-	if (token.AccessToken != jwt) {
-		t.Errorf("AccessToken not as expected. Got %s, want %s", token.AccessToken, jwt)
+	if (token.AccessToken != ttoken.AccessToken) {
+		t.Errorf("AccessToken not as expected. Got %s, want %s", token.AccessToken, ttoken.AccessToken)
 	}
-	if (token.IDToken != "idToken") {
-		t.Errorf("IDToken not as expected. Got %s, want %s", token.IDToken, "idToken")
+	if (token.IDToken != ttoken.IDToken) {
+		t.Errorf("IDToken not as expected. Got %s, want %s", token.IDToken, ttoken.IDToken)
 	}
-	if (token.RefreshToken != "refreshToken") {
-		t.Errorf("RefreshToken not as expected. Got %s, want %s", token.RefreshToken, "refreshToken")
+	if (token.RefreshToken != ttoken.RefreshToken) {
+		t.Errorf("RefreshToken not as expected. Got %s, want %s", token.RefreshToken, ttoken.RefreshToken)
 	}
-	if (token.Expires != 0) {
-		t.Errorf("Expires not as expected. Want %d, got %d", 0, token.Expires)
+	if (token.Expires != ttoken.Expires) {
+		t.Errorf("Expires not as expected. Want %d, got %d", ttoken.Expires, token.Expires)
 	}
-	if (token.DetaAccessToken != "aaaaaaaaaaaaaaaaaaaaaaaaaa") {
-		t.Errorf("DetaAccessToken not as expected. Want %s, got %s", "aaaaaaaaaaaaaaaaaaaaaaaaaa", token.DetaAccessToken)
+	if (token.DetaAccessToken != ttoken.DetaAccessToken) {
+		t.Errorf("DetaAccessToken not as expected. Want %s, got %s", ttoken.DetaAccessToken, token.DetaAccessToken)
 	}
-	
-	t.Logf("Successfully stored and read from token")
+	if !t.Failed() {
+		t.Logf("Successfully stored and read from token")
+	}
 }
 
 func TestManagerFailGetExpiry(t *testing.T) {
