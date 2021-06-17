@@ -105,39 +105,3 @@ func TestExpiresFromToken(t * testing.T) {
 		t.Errorf("Expiry from token incorrect. Want: %d, got: %d", 1623427684, exp)
 	}
 }
-
-func TestGetTokens(t *testing.T) {
-	manager := NewManager()
-	token, err := manager.getTokens()
-	if (err != nil) {
-		t.Errorf("Error getting token from manager: %s", err.Error())
-	}
-	if (token.AccessToken != jwt) {
-		t.Errorf("Incorrect access token: Want: %s, got: %s", jwt, token.AccessToken)
-	}
-	if (token.RefreshToken != "refreshToken") {
-		t.Errorf("Incorrect refresh token. Want: %s, got: %s", "refreshToken", token.RefreshToken)
-	}
-	if (token.Expires != 1623427684) {
-		t.Errorf("Incorrect expiry date. Want: %d, got: %d", 1623427684, token.Expires)
-	}
-	if (token.DetaAccessToken != "aaaaaaaaaaaaaaaaaaaaaaaaaa") {
-		t.Errorf("Incorrect access token. Got: %s, want: %s", token.AccessToken, "aaaaaaaaaaaaaaaaaaaaaaaaaa")
-	}
-}
-
-func TestIsBearerAuth(t *testing.T) {
-	manager := NewManager()
-	if (!manager.bearerAuth) {
-		t.Errorf("Incorrect bearer auth set. Got %t, Want: %t", manager.bearerAuth, true)
-	}
-}
-
-func TestIsBearerAuthFalse(t *testing.T) {
-	manager := Manager {
-		bearerAuth: false,
-	}
-	if (manager.bearerAuth) {
-		t.Errorf("Incorrect bearer auth set. Got %t, Want: %t", manager.bearerAuth, false)
-	}
-}
