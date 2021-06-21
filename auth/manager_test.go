@@ -41,11 +41,31 @@ func TestManagerStoreAndRetrieveTokens(t *testing.T) {
 	}
 }
 
-func TestManagerFailGetExpiry(t *testing.T) {
+func TestManagerGetExpiry(t *testing.T) {
 	manager := NewManager()
-	_, err :=manager.expiresFromToken("aaaaaaaaaaaaa")
-	if (err == nil) {
-		t.Errorf("Failed to cause error assigning invalid accessToken")
+	tests := []struct {
+		name string
+		expectedError error
+		expectedOutput int64
+		token string 
+	} {
+		{"invalid_token", ErrAccessTokenFormatInvalid, 0, "aaaaaaaaaaaaa"},
+		{"valid_token", nil, 1623427684, jwt},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := manager.expiresFromToken(tt.token)
+			if (tt.expectedError != err) {
+				t.Errorf("Unexpected error: Want %s, Got %s", tt.expectedError.Error(), err.Error())
+			}
+			if (out != tt.expectedOutput) {
+				t.Errorf("Mismatched output. Expected %d, got %d", tt.expectedOutput, out)
+			}
+			if (!t.Failed()) {
+				t.Logf("No fails in getExpiry!")
+			}
+		})
 	}
 }
 
@@ -102,16 +122,5 @@ func TestManagerIsTokenExpired(t *testing.T) {
 				t.Errorf("%s failed. Want %t, got %t", tt.name, tt.valid, manager.isTokenExpired(&tt.token))
 			}
 		})
-	}
-}
-
-func TestExpiresFromToken(t * testing.T) {
-	manager := NewManager()
-	exp, err := manager.expiresFromToken(jwt)
-	if (err != nil) {
-		t.Errorf("Error getting expiry from token: %s", err.Error())
-	}
-	if (exp != 1623427684) {
-		t.Errorf("Expiry from token incorrect. Want: %d, got: %d", 1623427684, exp)
 	}
 }

@@ -8,7 +8,7 @@ import (
 const detaExampleAccessToken = "aaaaaaa_xxxxxxxxxxxxxxxx"
 const detaExampleSignature = "v0=aaaaaaa:9369e755d35ea272895cab8546d745107f7b21e6e87e1324e1f85627c04934dd"
 
-func TestCalcSignature_EarlyReturnNotV0(t *testing.T) {
+func TestCalcSignature(t *testing.T) {
 	manager := NewManager()
 	exampleToken := CalcSignatureInput{
 		AccessToken: jwt,
@@ -18,6 +18,7 @@ func TestCalcSignature_EarlyReturnNotV0(t *testing.T) {
 		ContentType: "application/json",
 		RawBody:     []byte("<h1>Hurr durr</h1>"),
 	}
+	
 	out, err := manager.CalcSignature(&exampleToken)
 	if err != nil {
 		t.Errorf("Error calculating signature: %s", err.Error())
