@@ -167,7 +167,7 @@ func (m *Manager) handleIgnoreFile() error {
 		return err
 	}
 
-	for _, line := range strings.Split(string(lines), NewLine) {
+	for _, line := range readLines(lines) {
 		line = strings.Trim(line, SPACE)
 		if len(line) != 0 {
 			value, err := regexp.CompilePOSIX(line)
@@ -625,9 +625,8 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 	}
 	switch runtime {
 	case Python:
-		lines := strings.Split(string(contents), NewLine)
 		var deps []string
-		for _, l := range lines {
+		for _, l := range readLines(contents) {
 			l = strings.ReplaceAll(l, " ", "")
 			// skip empty lines and commentes #
 			if l != "" && !strings.HasPrefix(l, "#") {
@@ -721,9 +720,8 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 	if len(contents) == 0 {
 		return nil, nil
 	}
-	lines := strings.Split(string(contents), NewLine)
 	envs := make(map[string]string)
-	for n, l := range lines {
+	for n, l := range readLines(contents) {
 		// skip empty lines and commentes #
 		if l != "" && !strings.HasPrefix(l, "#") {
 			sepIndex := strings.Index(l, "=")

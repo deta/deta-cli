@@ -1,17 +1,17 @@
-// +build !windows
-
 package runtime
 
-// NewLine new line in unix
-const NewLine = "\n"
+import (
+	"bufio"
+	"bytes"
+)
 
-// other binary extensions
-var otherBinaryExts = map[string]struct{}{
-	".mo": {},
-}
+func readLines(data []byte) []string {
+	scanner := bufio.NewScanner(bytes.NewReader(data))
 
-// mock function so that the compiler does not complain
-// when compilng for linux platforms
-func isHiddenWindows(path string) (bool, error) {
-	return false, nil
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	return lines
 }

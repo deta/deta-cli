@@ -9,8 +9,6 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const NewLine = "\r\n"
-
 // other binary extensions
 var otherBinaryExts = map[string]struct{}{
 	".mo": {},
