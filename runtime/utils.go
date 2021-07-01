@@ -5,7 +5,12 @@ import (
 	"bytes"
 )
 
-func readLines(data []byte) []string {
+// other binary extensions
+var otherBinaryExts = map[string]struct{}{
+	".mo": {},
+}
+
+func readLines(data []byte) ([]string, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(data))
 
 	var lines []string
@@ -13,5 +18,5 @@ func readLines(data []byte) []string {
 		lines = append(lines, scanner.Text())
 	}
 
-	return lines
+	return lines, scanner.Err()
 }

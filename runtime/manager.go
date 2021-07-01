@@ -162,12 +162,17 @@ func (m *Manager) handleIgnoreFile() error {
 		return err
 	}
 
-	lines, _, err := m.readFile(m.ignorePath)
+	contents, _, err := m.readFile(m.ignorePath)
 	if err != nil {
 		return err
 	}
 
-	for _, line := range readLines(lines) {
+	lines, err := readLines(contents)
+	if err != nil {
+		return err
+	}
+
+	for _, line := range lines {
 		line = strings.Trim(line, SPACE)
 		if len(line) != 0 {
 			value, err := regexp.CompilePOSIX(line)
@@ -626,7 +631,13 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 	switch runtime {
 	case Python:
 		var deps []string
-		for _, l := range readLines(contents) {
+
+		lines, err := readLines(contents)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, l := range lines {
 			l = strings.ReplaceAll(l, " ", "")
 			// skip empty lines and commentes #
 			if l != "" && !strings.HasPrefix(l, "#") {
@@ -721,7 +732,13 @@ func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
 		return nil, nil
 	}
 	envs := make(map[string]string)
-	for n, l := range readLines(contents) {
+
+	lines, err := readLines(contents)
+	if err != nil {
+		return nil, err
+	}
+
+	for n, l := range lines {
 		// skip empty lines and commentes #
 		if l != "" && !strings.HasPrefix(l, "#") {
 			sepIndex := strings.Index(l, "=")
