@@ -46,6 +46,14 @@ var (
 	ErrNoAuthTokenFound = errors.New("no auth token found")
 	// ErrInvalidAccessToken invalid access token
 	ErrInvalidAccessToken = errors.New("invalid access token")
+	// ErrAccessTokenFormatInvalid invalid access token format
+	ErrAccessTokenFormatInvalid = errors.New("access token is of invalid format")
+	// ErrNoAccessTokenExpiryTimeFound no expire time in access token
+	ErrNoAccessTokenExpiryTimeFound = errors.New("no expiry time found in access token")
+	// ErrFailedToRefreshToken couldn't refresh auth tokens
+	ErrFailedToRefreshToken = errors.New("failed to refresh auth tokens")
+	// ErrUnsupportedPlatform platform not supported
+	ErrUnsupportedPlatform  = errors.New("unsupported platform")
 )
 
 // Token aws cognito token or access keys
@@ -119,7 +127,7 @@ type tokenPayload struct {
 func (m *Manager) expiresFromToken(accessToken string) (int64, error) {
 	tokenParts := strings.Split(accessToken, ".")
 	if len(tokenParts) != 3 {
-		return 0, fmt.Errorf("access token is of invalid format")
+		return 0, ErrAccessTokenFormatInvalid
 	}
 
 	decoded, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
@@ -134,7 +142,7 @@ func (m *Manager) expiresFromToken(accessToken string) (int64, error) {
 	}
 	e := payload.Expires
 	if e == 0 {
-		return 0, fmt.Errorf("no expire time found in access token")
+		return 0, ErrNoAccessTokenExpiryTimeFound
 	}
 	return e, nil
 }
@@ -229,7 +237,7 @@ func (m *Manager) refreshTokens() (*Token, error) {
 
 	authResult := o.AuthenticationResult
 	if authResult == nil {
-		return nil, fmt.Errorf("failed to refresh auth tokens")
+		return nil, ErrRefreshTokenInvalid
 	}
 
 	newTokens := &Token{
@@ -296,7 +304,7 @@ func (m *Manager) openLoginPage() error {
 	case "darwin":
 		return exec.Command("open", loginURL).Start()
 	default:
-		return fmt.Errorf("unsupported platform")
+		return ErrUnsupportedPlatform
 	}
 }
 
