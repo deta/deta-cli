@@ -639,6 +639,7 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 
 		for _, l := range lines {
 			l = strings.ReplaceAll(l, " ", "")
+			l = strings.Split(l, ";")[0]
 			// skip empty lines and commentes #
 			if l != "" && !strings.HasPrefix(l, "#") {
 				deps = append(deps, l)
