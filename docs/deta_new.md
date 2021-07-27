@@ -39,7 +39,7 @@ Create a new deta micro with the python runtime, name 'my-github-webhook' and in
   -h, --help             help for new
       --name string      deta micro name
   -n, --node             create a micro with node runtime
-      --project string   deta project
+      --project string   project to create the micro under
   -p, --python           create a micro with python runtime
 ```
 

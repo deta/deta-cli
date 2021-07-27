@@ -23,7 +23,7 @@ var (
 
 func init() {
 	cloneCmd.Flags().StringVar(&progName, "name", "", "deta micro name")
-	cloneCmd.Flags().StringVar(&projectName, "project", "", "deta project")
+	cloneCmd.Flags().StringVar(&projectName, "project", "", "project to create the micro under")
 	cloneCmd.MarkFlagRequired("name")
 
 	rootCmd.AddCommand(cloneCmd)

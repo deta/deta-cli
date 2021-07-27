@@ -29,7 +29,7 @@ Clone latest deployment of micro 'my-micro' from project 'my-project' to directo
 ```
   -h, --help             help for clone
       --name string      deta micro name
-      --project string   deta project
+      --project string   project to create the micro under
 ```
 
 ### SEE ALSO
