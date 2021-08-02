@@ -44,14 +44,14 @@ func progInfoToOutput(p *runtime.ProgInfo) (string, error) {
 		SpaceID: u.DefaultSpace,
 	})
 
+	if err != nil {
+		return "", err
+	}
+
 	for _, pr := range res.Projects {
 		if pr.ID == p.Project {
 			p.Project = pr.Name
 		}
-	}
-
-	if err != nil {
-		return "", err
 	}
 
 	o := progDetailsOutput{
