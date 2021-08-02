@@ -25,8 +25,8 @@ func upgradeWin() error {
 	if versionFlag != "" {
 		msg = fmt.Sprintf("%s to version %s", msg, versionFlag)
 		if strings.HasPrefix(versionFlag, "v") {
-            versionFlag = versionFlag[1:]
-        }
+			versionFlag = versionFlag[1:]
+		}
 		cmd = fmt.Sprintf(`$v="%s"; %s`, versionFlag, cmd)
 	}
 	fmt.Println(fmt.Sprintf("%s...", msg))
