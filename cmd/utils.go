@@ -17,8 +17,11 @@ var (
 
 type progDetailsOutput struct {
 	Name     string   `json:"name"`
+	ID       string   `json:"id"`
+	Project  string   `json:"project"`
 	Runtime  string   `json:"runtime"`
 	Endpoint string   `json:"endpoint"`
+	Region   string   `json:"region"`
 	Deps     []string `json:"dependencies,omitempty"`
 	Envs     []string `json:"environment_variables,omitempty"`
 	Visor    string   `json:"visor"`
@@ -27,15 +30,43 @@ type progDetailsOutput struct {
 }
 
 func progInfoToOutput(p *runtime.ProgInfo) (string, error) {
+	runtimeManager, err := runtime.NewManager(nil, false)
+	if err != nil {
+		return "", err
+	}
+
+	u, err := getUserInfo(runtimeManager, client)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := client.GetProjects(&api.GetProjectsRequest{
+		SpaceID: u.DefaultSpace,
+	})
+
+	for _, pr := range res.Projects {
+		if pr.ID == p.Project {
+			p.Project = pr.Name
+		}
+	}
+
+	if err != nil {
+		return "", err
+	}
+
 	o := progDetailsOutput{
 		Name:    p.Name,
+		ID:      p.ID,
+		Project: p.Project,
 		Runtime: p.Runtime,
+		Region:  p.Region,
 		Deps:    p.Deps,
 		Envs:    p.Envs,
 		Visor:   "enabled",
 		Auth:    "enabled",
 		Cron:    p.Cron,
 	}
+
 	o.Endpoint = fmt.Sprintf("https://%s.%s", p.Path, gatewayDomain)
 	if p.Visor == "off" {
 		o.Visor = "disabled"
