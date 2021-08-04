@@ -347,7 +347,7 @@ func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
 	}
 
 	for _, re := range m.skipPaths[runtime] {
-		if re.Value.MatchString(path) {
+		if re.Value.MatchString(filepath.ToSlash(path)) {
 			return re.Skip, nil
 		}
 	}
