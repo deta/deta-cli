@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/deta/deta-cli/api"
 	"github.com/deta/deta-cli/runtime"
 	"github.com/spf13/cobra"
 )
@@ -46,6 +47,21 @@ func details(cmd *cobra.Command, args []string) error {
 	}
 	if progInfo == nil {
 		return fmt.Errorf("failed to get deta micro details")
+	}
+	u, err := getUserInfo(runtimeManager, client)
+	if err != nil {
+		return err
+	}
+	res, err := client.GetProjects(&api.GetProjectsRequest{
+		SpaceID: u.DefaultSpace,
+	})
+	if err != nil {
+		return err
+	}
+	for _, p := range res.Projects {
+		if p.ID == progInfo.Project {
+			progInfo.Project = p.Name
+		}
 	}
 	output, err := progInfoToOutput(progInfo)
 	if err != nil {
