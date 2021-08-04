@@ -30,30 +30,6 @@ type progDetailsOutput struct {
 }
 
 func progInfoToOutput(p *runtime.ProgInfo) (string, error) {
-	runtimeManager, err := runtime.NewManager(nil, false)
-	if err != nil {
-		return "", err
-	}
-
-	u, err := getUserInfo(runtimeManager, client)
-	if err != nil {
-		return "", err
-	}
-
-	res, err := client.GetProjects(&api.GetProjectsRequest{
-		SpaceID: u.DefaultSpace,
-	})
-
-	if err != nil {
-		return "", err
-	}
-
-	for _, pr := range res.Projects {
-		if pr.ID == p.Project {
-			p.Project = pr.Name
-		}
-	}
-
 	o := progDetailsOutput{
 		Name:    p.Name,
 		ID:      p.ID,
