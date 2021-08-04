@@ -342,12 +342,12 @@ func (m *Manager) isHidden(path string) (bool, error) {
 // should skip if the file or dir should be skipped
 func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
 	// do not skip .detaignore file
-	if regexp.MustCompile(ignoreFile).MatchString(filepath.ToSlash(path)) {
+	if regexp.MustCompile(ignoreFile).MatchString(path) {
 		return false, nil
 	}
 
 	for _, re := range m.skipPaths[runtime] {
-		if re.Value.MatchString(path) {
+		if re.Value.MatchString(filepath.ToSlash(path)) {
 			return re.Skip, nil
 		}
 	}
