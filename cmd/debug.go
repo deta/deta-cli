@@ -40,52 +40,52 @@ func debug(cmd *cobra.Command, args []string) error {
 		syscall.SIGQUIT)
 
 	start := time.Now().UnixNano() / int64(time.Millisecond)
-	
+
 	ticker := time.NewTicker(TickerDuration * time.Millisecond)
 	defer ticker.Stop()
-	
+
 	wd, err := os.Getwd()
-    if err != nil {
-        return err
-    }
-    if len(args) != 0 {
-        wd = args[0]
-    }
+	if err != nil {
+		return err
+	}
+	if len(args) != 0 {
+		wd = args[0]
+	}
 
-    runtimeManager, err := runtime.NewManager(&wd, false)
-    if err != nil {
-        return err
-    }
+	runtimeManager, err := runtime.NewManager(&wd, false)
+	if err != nil {
+		return err
+	}
 
-    isInitialized, err := runtimeManager.IsInitialized()
-    if err != nil {
-        return err
-    }
+	isInitialized, err := runtimeManager.IsInitialized()
+	if err != nil {
+		return err
+	}
 
-    if !isInitialized {
-        return fmt.Errorf("no deta micro initialized in '%s'", wd)
-    }
+	if !isInitialized {
+		return fmt.Errorf("no deta micro initialized in '%s'", wd)
+	}
 
-    progInfo, err := runtimeManager.GetProgInfo()
-    if err != nil {
-        return err
-    }
+	progInfo, err := runtimeManager.GetProgInfo()
+	if err != nil {
+		return err
+	}
 
-    if progInfo == nil {
-        return fmt.Errorf("failed to get micro information")
-    }
+	if progInfo == nil {
+		return fmt.Errorf("failed to get micro information")
+	}
 
-    enableVisor := false
-    if progInfo.Visor == "debug" {
-        err = updateVisor("off", args)
-        if err != nil {
-            return err
-        }
-        enableVisor = true
-    }
+	enableVisor := false
+	if progInfo.Visor == "debug" {
+		err = updateVisor("off", args)
+		if err != nil {
+			return err
+		}
+		enableVisor = true
+	}
 	fmt.Println("Listening for logs")
 
-	go func () {
+	go func() {
 		for {
 			time.Sleep(TickerDuration * time.Millisecond)
 		}
@@ -105,31 +105,31 @@ func debug(cmd *cobra.Command, args []string) error {
 }
 
 func pollLogs(progInfo *runtime.ProgInfo, start int64) error {
-    lk := make(map[int64]struct{})
-    logs := make([]api.LogType, 0)
-    lastToken := ""
-    for {
-        res, err := client.GetLogs(&api.GetLogsRequest{
-            ProgramID: progInfo.ID,
-            LastToken: lastToken,
-        })
-        if err != nil {
-            return err
-        }
-        logs = append(logs, res.Logs...)
+	lk := make(map[int64]struct{})
+	logs := make([]api.LogType, 0)
+	lastToken := ""
+	for {
+		res, err := client.GetLogs(&api.GetLogsRequest{
+			ProgramID: progInfo.ID,
+			LastToken: lastToken,
+		})
+		if err != nil {
+			return err
+		}
+		logs = append(logs, res.Logs...)
 
-        if len(res.LastToken) == 0 {
-            break
-        }
+		if len(res.LastToken) == 0 {
+			break
+		}
 
-        lastToken = res.LastToken
-    }
-    for _, log := range logs {
-        _, ok := lk[log.Timestamp]
-        if !ok && log.Timestamp > start {
-            printLogs(log.Timestamp, log.Log)
-            lk[log.Timestamp] = struct{}{}
-        }
-    }
-    return nil
+		lastToken = res.LastToken
+	}
+	for _, log := range logs {
+		_, ok := lk[log.Timestamp]
+		if !ok && log.Timestamp > start {
+			printLogs(log.Timestamp, log.Log)
+			lk[log.Timestamp] = struct{}{}
+		}
+	}
+	return nil
 }
