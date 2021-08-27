@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	TickerDuration = 250
+	TickerDuration = 1000
 )
 
 var (
@@ -85,18 +85,13 @@ func debug(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println("Listening for logs")
 
-	go func() {
-		for {
-			time.Sleep(TickerDuration * time.Millisecond)
-		}
-	}()
-
 	for {
 		select {
 		case <-sigs:
 			if enableVisor {
 				_ = updateVisor("debug", args)
 			}
+			ticker.Stop()
 			return nil
 		case <-ticker.C:
 			_ = pollLogs(progInfo, start)
@@ -106,8 +101,8 @@ func debug(cmd *cobra.Command, args []string) error {
 
 func pollLogs(progInfo *runtime.ProgInfo, start int64) error {
 	lk := make(map[int64]struct{})
-	logs := make([]api.LogType, 0)
 	lastToken := ""
+
 	for {
 		res, err := client.GetLogs(&api.GetLogsRequest{
 			ProgramID: progInfo.ID,
@@ -116,20 +111,13 @@ func pollLogs(progInfo *runtime.ProgInfo, start int64) error {
 		if err != nil {
 			return err
 		}
-		logs = append(logs, res.Logs...)
 
-		if len(res.LastToken) == 0 {
-			break
-		}
-
-		lastToken = res.LastToken
-	}
-	for _, log := range logs {
-		_, ok := lk[log.Timestamp]
-		if !ok && log.Timestamp > start {
-			printLogs(log.Timestamp, log.Log)
-			lk[log.Timestamp] = struct{}{}
+		for _, log := range res.Logs {
+			_, ok := lk[log.Timestamp]
+			if !ok && log.Timestamp > start {
+				printLogs(log.Timestamp, log.Log)
+				lk[log.Timestamp] = struct{}{}
+			}
 		}
 	}
-	return nil
 }
