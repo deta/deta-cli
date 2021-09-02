@@ -83,7 +83,7 @@ func debug(cmd *cobra.Command, args []string) error {
 		}
 		enableVisor = true
 	}
-	fmt.Println("Listening for logs")
+	fmt.Println("Listening for logs...")
 
 	for {
 		select {
@@ -100,9 +100,29 @@ func debug(cmd *cobra.Command, args []string) error {
 }
 
 func pollLogs(progInfo *runtime.ProgInfo, start int64) error {
-	lk := make(map[int64]struct{})
-	lastToken := ""
+	// lk := make(map[int64]struct{})
+	// lastToken := ""
 
+	// for {
+	// 	res, err := client.GetLogs(&api.GetLogsRequest{
+	// 		ProgramID: progInfo.ID,
+	// 		LastToken: lastToken,
+	// 	})
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	for _, log := range res.Logs {
+	// 		_, ok := lk[log.Timestamp]
+	// 		if !ok && log.Timestamp > start {
+	// 			printLogs(log.Timestamp, log.Log)
+	// 			lk[log.Timestamp] = struct{}{}
+	// 		}
+	// 	}
+	// }
+	lastToken := ""
+	lk := make(map[int64]struct{})
+	logs := make([]api.LogType, 0)
 	for {
 		res, err := client.GetLogs(&api.GetLogsRequest{
 			ProgramID: progInfo.ID,
@@ -111,13 +131,21 @@ func pollLogs(progInfo *runtime.ProgInfo, start int64) error {
 		if err != nil {
 			return err
 		}
+		logs = append(logs, res.Logs...)
 
-		for _, log := range res.Logs {
-			_, ok := lk[log.Timestamp]
-			if !ok && log.Timestamp > start {
-				printLogs(log.Timestamp, log.Log)
-				lk[log.Timestamp] = struct{}{}
-			}
+		if len(res.LastToken) == 0 {
+			break
+		}
+		lastToken = res.LastToken
+	}
+
+	for _, log := range logs {
+		_, ok := lk[log.Timestamp]
+		if !ok && log.Timestamp > start {
+			printLogs(log.Timestamp, log.Log)
+			lk[log.Timestamp] = struct{}{}
 		}
 	}
+
+	return nil
 }
