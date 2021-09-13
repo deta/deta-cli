@@ -110,16 +110,22 @@ func new(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		if nodeFlag && progRuntime != runtime.Node {
+		if nodeFlag && progRuntime.Name != runtime.Node {
 			return fmt.Errorf("'%s' does not contain node entrypoint file", wd)
-		} else if pythonFlag && progRuntime != runtime.Python {
+		} else if pythonFlag && progRuntime.Name != runtime.Python {
 			return fmt.Errorf("'%s' does not contain python entrypoint file", wd)
 		}
 	} else {
 		if nodeFlag {
-			progRuntime = runtime.Node
+			progRuntime = &runtime.Runtime{
+				Name:    runtime.Node,
+				Version: runtime.GetDefaultRuntimeVersion(runtime.Node),
+			}
 		} else if pythonFlag {
-			progRuntime = runtime.Python
+			progRuntime = &runtime.Runtime{
+				Name:    runtime.Python,
+				Version: runtime.GetDefaultRuntimeVersion(runtime.Python),
+			}
 		} else {
 			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python'\n")
 			return nil
@@ -141,7 +147,7 @@ func new(cmd *cobra.Command, args []string) error {
 		Space:   userInfo.DefaultSpace,
 		Project: project,
 		Name:    progName,
-		Runtime: progRuntime,
+		Runtime: progRuntime.Version,
 	}
 
 	// send new program request

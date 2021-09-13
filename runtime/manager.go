@@ -26,10 +26,8 @@ const (
 
 	NodeSkipPattern = `(node_modules)|(.*~$)|(.*\.deta)`
 
-	// Python runtime
-	Python = "python3.7"
-	// Node runtime
-	Node = "nodejs12.x"
+	Python = "python"
+	Node   = "node"
 
 	// DefaultProject default project slug
 	DefaultProject = "default"
@@ -46,6 +44,12 @@ type Pattern struct {
 }
 
 var (
+	// supported runtimes Note: index 0 is the default runtime
+	runtimes = map[string][]string{
+		Python: {"python3.9", "python3.7"},
+		Node:   {"nodejs14.x", "nodejs12.x"},
+	}
+
 	// maps entrypoint files to runtimes
 	entryPoints = map[string]string{
 		"main.py":  Python,
@@ -102,6 +106,12 @@ type Manager struct {
 	statePath    string               // path to state file about the program
 	ignorePath   string               // path to .detaignore file
 	skipPaths    map[string][]Pattern // files that will be skipped
+}
+
+// Runtime holds name and version of current runtime used
+type Runtime struct {
+	Name    string
+	Version string
 }
 
 // NewManager returns a new runtime manager for the root dir of the program
@@ -203,7 +213,7 @@ func (m *Manager) handleIgnoreFile() error {
 				}
 			}
 
-			m.skipPaths[runtime] = append([]Pattern{pattern}, m.skipPaths[runtime]...)
+			m.skipPaths[runtime.Name] = append([]Pattern{pattern}, m.skipPaths[runtime.Name]...)
 		}
 	}
 
@@ -292,14 +302,32 @@ func (m *Manager) IsProgDirEmpty() (bool, error) {
 	return true, nil
 }
 
+// getRuntime checks if given runtime is supported
+func getRuntime(runtime string) (*Runtime, error) {
+	for k, v := range runtimes {
+		if contains(v, runtime) {
+			return &Runtime{Name: k, Version: runtime}, nil
+		}
+	}
+	return nil, fmt.Errorf("'%s' runtime not supported", runtime)
+}
+
+// GetDefaultRuntimeVersion returns default runtime version
+func GetDefaultRuntimeVersion(name string) string {
+	return runtimes[name][0] // index 0 is the default runtime
+}
+
 // GetRuntime gets runtime from proginfo or figures out the runtime of the program from entrypoint file if present in the root dir
-func (m *Manager) GetRuntime() (string, error) {
+func (m *Manager) GetRuntime() (*Runtime, error) {
 	progInfo, _ := m.GetProgInfo()
 	if progInfo != nil {
-		return progInfo.Runtime, nil
+		runtime, err := getRuntime(progInfo.Runtime)
+		if err == nil {
+			return runtime, nil
+		}
 	}
 
-	var runtime string
+	var runtime *Runtime
 	var found bool
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
 		if path == m.rootDir {
@@ -312,7 +340,10 @@ func (m *Manager) GetRuntime() (string, error) {
 		if r, ok := entryPoints[filename]; ok {
 			if !found {
 				found = true
-				runtime = r
+				runtime = &Runtime{
+					Name:    r,
+					Version: GetDefaultRuntimeVersion(r),
+				}
 			} else {
 				return errors.New("conflicting entrypoint files found")
 			}
@@ -320,10 +351,10 @@ func (m *Manager) GetRuntime() (string, error) {
 		return nil
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if !found {
-		return "", ErrNoEntrypoint
+		return nil, ErrNoEntrypoint
 	}
 	return runtime, nil
 }
@@ -417,7 +448,7 @@ func (m *Manager) StoreState() error {
 			return err
 		}
 
-		shouldSkip, err := m.shouldSkip(path, r)
+		shouldSkip, err := m.shouldSkip(path, r.Name)
 		if err != nil {
 			return err
 		}
@@ -489,7 +520,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 			return err
 		}
 
-		shouldSkip, err := m.shouldSkip(path, r)
+		shouldSkip, err := m.shouldSkip(path, r.Name)
 		if err != nil {
 			return err
 		}
@@ -556,7 +587,7 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		if err != nil {
 			return err
 		}
-		shouldSkip, err := m.shouldSkip(path, r)
+		shouldSkip, err := m.shouldSkip(path, r.Name)
 		if err != nil {
 			return err
 		}
@@ -672,10 +703,11 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 	}
 
 	if progInfo.Runtime == "" {
-		progInfo.Runtime, err = m.GetRuntime()
+		rtime, err := m.GetRuntime()
 		if err != nil {
 			return nil, err
 		}
+		progInfo.Runtime = rtime.Version
 	}
 	deps, err := m.readDeps(progInfo.Runtime)
 	if err != nil {
