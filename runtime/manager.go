@@ -302,14 +302,14 @@ func (m *Manager) IsProgDirEmpty() (bool, error) {
 	return true, nil
 }
 
-// getRuntime checks if given runtime is supported
-func getRuntime(runtime string) (*Runtime, error) {
+// CheckRuntime checks if given runtime is supported
+func CheckRuntime(runtime string) (*Runtime, error) {
 	for k, v := range runtimes {
 		if contains(v, runtime) {
 			return &Runtime{Name: k, Version: runtime}, nil
 		}
 	}
-	return nil, fmt.Errorf("'%s' runtime not supported", runtime)
+	return nil, fmt.Errorf("runtime not supported, run 'deta new --help' to see all the supported runtimes")
 }
 
 // GetDefaultRuntimeVersion returns default runtime version
@@ -321,7 +321,7 @@ func GetDefaultRuntimeVersion(name string) string {
 func (m *Manager) GetRuntime() (*Runtime, error) {
 	progInfo, _ := m.GetProgInfo()
 	if progInfo != nil {
-		runtime, err := getRuntime(progInfo.Runtime)
+		runtime, err := CheckRuntime(progInfo.Runtime)
 		if err == nil {
 			return runtime, nil
 		}

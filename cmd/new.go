@@ -19,6 +19,7 @@ var (
 	pythonFlag  bool
 	progName    string
 	projectName string
+	runtimeName string
 
 	newCmd = &cobra.Command{
 		Use:     "new [flags] [path]",
@@ -35,6 +36,7 @@ func init() {
 	newCmd.Flags().BoolVarP(&pythonFlag, "python", "p", false, "create a micro with python runtime")
 	newCmd.Flags().StringVar(&progName, "name", "", "deta micro name")
 	newCmd.Flags().StringVar(&projectName, "project", "", "project to create the micro under")
+	newCmd.Flags().StringVar(&runtimeName, "runtime", "", "runtime version\n\tPython: python3.7, python3.9\n\tNode: nodejs12, nodejs14")
 
 	rootCmd.AddCommand(newCmd)
 }
@@ -42,6 +44,10 @@ func init() {
 func new(cmd *cobra.Command, args []string) error {
 	if nodeFlag && pythonFlag {
 		return fmt.Errorf("can not set both node and python flags")
+	}
+
+	if (nodeFlag || pythonFlag) && len(runtimeName) != 0 {
+		return fmt.Errorf("can not set both node/python flags and runtime flag")
 	}
 
 	var wd string
@@ -105,7 +111,7 @@ func new(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if !isEmpty {
+	if !isEmpty && len(runtimeName) == 0 {
 		progRuntime, err = runtimeManager.GetRuntime()
 		if err != nil {
 			return err
@@ -125,6 +131,16 @@ func new(cmd *cobra.Command, args []string) error {
 			progRuntime = &runtime.Runtime{
 				Name:    runtime.Python,
 				Version: runtime.GetDefaultRuntimeVersion(runtime.Python),
+			}
+		} else if len(runtimeName) != 0 {
+			newRuntimeName := runtimeName
+			if strings.Contains(runtimeName, runtime.Node) {
+				newRuntimeName = fmt.Sprintf("%s.x", runtimeName)
+			}
+
+			progRuntime, err = runtime.CheckRuntime(newRuntimeName)
+			if err != nil {
+				return fmt.Errorf("'%s' %s", runtimeName, err.Error())
 			}
 		} else {
 			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python'\n")
