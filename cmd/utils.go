@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/deta/deta-cli/api"
 	"github.com/deta/deta-cli/runtime"
@@ -112,16 +111,17 @@ func getUserInfo(rm *runtime.Manager, client *api.DetaClient) (*runtime.UserInfo
 	return u, nil
 }
 
-func parseDateTime(str string) (int64, error) {
-	str = strings.Trim(str, SPACE)
-	if len(str) != 0 {
-		dateTime, err := time.Parse(time.RFC3339, str)
-		if err != nil {
-			return 0, fmt.Errorf("invalid date time format(RFC3339) %s", str)
-		}
-
-		return dateTime.UnixNano() / int64(time.Millisecond), nil
+// parseRuntime takes runtimeName as string and returns Runtine struct
+func parseRuntime(runtimeName string) (*runtime.Runtime, error) {
+	newRuntimeName := runtimeName
+	if strings.Contains(runtimeName, runtime.Node) {
+		newRuntimeName = fmt.Sprintf("%s.x", runtimeName)
 	}
 
-	return 0, nil
+	progRuntime, err := runtime.CheckRuntime(newRuntimeName)
+	if err != nil {
+		return nil, fmt.Errorf("'%s' %s", runtimeName, err.Error())
+	}
+
+	return progRuntime, nil
 }

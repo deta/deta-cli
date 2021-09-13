@@ -133,14 +133,9 @@ func new(cmd *cobra.Command, args []string) error {
 				Version: runtime.GetDefaultRuntimeVersion(runtime.Python),
 			}
 		} else if len(runtimeName) != 0 {
-			newRuntimeName := runtimeName
-			if strings.Contains(runtimeName, runtime.Node) {
-				newRuntimeName = fmt.Sprintf("%s.x", runtimeName)
-			}
-
-			progRuntime, err = runtime.CheckRuntime(newRuntimeName)
+			progRuntime, err = parseRuntime(runtimeName)
 			if err != nil {
-				return fmt.Errorf("'%s' %s", runtimeName, err.Error())
+				return err
 			}
 		} else {
 			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python'\n")

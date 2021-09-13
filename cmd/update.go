@@ -26,11 +26,12 @@ var (
 func init() {
 	updateCmd.Flags().StringVarP(&envsPath, "env", "e", "", "path to env file")
 	updateCmd.Flags().StringVarP(&progName, "name", "n", "", "new name of the micro")
+	updateCmd.Flags().StringVarP(&runtimeName, "runtime", "r", "", "runtime version\n\tPython: python3.7, python3.9\n\tNode: nodejs12, nodejs14")
 	rootCmd.AddCommand(updateCmd)
 }
 
 func update(cmd *cobra.Command, args []string) error {
-	if progName == "" && envsPath == "" {
+	if len(progName) == 0 && len(envsPath) == 0 && len(runtimeName) == 0 {
 		cmd.Usage()
 		return nil
 	}
@@ -58,7 +59,7 @@ func update(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if progName != "" {
+	if len(progName) != 0 {
 		fmt.Println("Updating the name..")
 		err := client.UpdateProgName(&api.UpdateProgNameRequest{
 			ProgramID: progInfo.ID,
@@ -73,7 +74,7 @@ func update(cmd *cobra.Command, args []string) error {
 		fmt.Println("Successfully update micro's name")
 	}
 
-	if envsPath != "" {
+	if len(envsPath) != 0 {
 		fmt.Println("Updating environment variables...")
 		envChanges, err := runtimeManager.GetEnvChanges(envsPath)
 		if err != nil {
@@ -110,6 +111,27 @@ func update(cmd *cobra.Command, args []string) error {
 
 		fmt.Println("Successfully updated micro's environment variables")
 	}
+
+	if len(runtimeName) != 0 {
+		fmt.Println("Updating runtime...")
+		progRuntime, err := parseRuntime(runtimeName)
+		if err != nil {
+			return err
+		}
+
+		err = client.UpdateProgRuntime(&api.UpdateProgRuntimeRequest{
+			ProgramID: progInfo.ID,
+			Runtime:   progRuntime.Version,
+		})
+		if err != nil {
+			return err
+		}
+		progInfo.Runtime = progRuntime.Version
+		runtimeManager.StoreProgInfo(progInfo)
+
+		fmt.Println("Successfully update micro's runtime")
+	}
+
 	return nil
 }
 
