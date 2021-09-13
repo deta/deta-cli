@@ -305,5 +305,10 @@ Create a new deta micro with the node runtime in the directory './my-node-micro'
 3. deta new --python --name my-github-webhook webhooks/github-deta
 
 Create a new deta micro with the python runtime, name 'my-github-webhook' and in directory 'webhooks/github-deta'. 
-'./my-node-micro' must not contain a node entrypoint file ('index.js') if directory is already present. `
+'webhooks/github-deta' must not contain a node entrypoint file ('index.js') if directory is already present.
+
+4. deta new --runtime nodejs12 --name my-node-micro
+
+Create a new deta micro with the node (nodejs12.x) runtime in the directory './my-node-micro'.
+'./my-node-micro' must not contain a python entrypoint file ('main.py') if directory is already present. `
 }
