@@ -238,7 +238,21 @@ func (m *Manager) GetProgInfo() (*ProgInfo, error) {
 		}
 		return nil, err
 	}
-	return progInfoFromBytes(contents)
+
+	progInfo, err := progInfoFromBytes(contents)
+	if err != nil {
+		return nil, err
+	}
+
+	runtime, err := CheckRuntime(progInfo.Runtime)
+	if err != nil {
+		return nil, err
+	}
+
+	progInfo.RuntimeName = runtime.Name
+	progInfo.Runtime = runtime.Version
+
+	return progInfo, nil
 }
 
 // StoreUserInfo stores the user info
@@ -321,10 +335,10 @@ func GetDefaultRuntimeVersion(name string) string {
 func (m *Manager) GetRuntime() (*Runtime, error) {
 	progInfo, _ := m.GetProgInfo()
 	if progInfo != nil {
-		runtime, err := CheckRuntime(progInfo.Runtime)
-		if err == nil {
-			return runtime, nil
-		}
+		return &Runtime{
+			Name:    progInfo.RuntimeName,
+			Version: progInfo.Runtime,
+		}, nil
 	}
 
 	var runtime *Runtime
@@ -709,7 +723,7 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 		}
 		progInfo.Runtime = rtime.Version
 	}
-	deps, err := m.readDeps(progInfo.Runtime)
+	deps, err := m.readDeps(progInfo.RuntimeName)
 	if err != nil {
 		return nil, err
 	}
