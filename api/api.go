@@ -371,6 +371,36 @@ func (c *DetaClient) UpdateProgEnvs(req *UpdateProgEnvsRequest) error {
 	return nil
 }
 
+// UpdateProgRuntimeRequest request to update program runtime
+type UpdateProgRuntimeRequest struct {
+	ProgramID string `json:"-"`
+	Runtime   string `json:"runtime"`
+}
+
+// UpdateProgRuntime update program runtime
+func (c *DetaClient) UpdateProgRuntime(req *UpdateProgRuntimeRequest) error {
+	i := &requestInput{
+		Path:      fmt.Sprintf("/programs/%s/runtime", req.ProgramID),
+		Method:    "PATCH",
+		Body:      req,
+		NeedsAuth: true,
+	}
+
+	o, err := c.request(i)
+	if err != nil {
+		return err
+	}
+
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
+		}
+		return fmt.Errorf("failed to update program runtime: %s", msg)
+	}
+	return nil
+}
+
 // UpdateProgDepsRequest request to update program dependencies
 type UpdateProgDepsRequest struct {
 	ProgramID string `json:"program_id"`
