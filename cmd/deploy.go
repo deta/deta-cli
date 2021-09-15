@@ -130,7 +130,7 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 
 	if dc != nil {
 		fmt.Println("Updating dependencies...")
-		command := runtime.DepCommands[p.Runtime]
+		command := runtime.DepCommands[p.RuntimeName]
 		if len(dc.Added) > 0 {
 			installCmd := fmt.Sprintf("%s install", command)
 			for _, a := range dc.Added {
