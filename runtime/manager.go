@@ -323,7 +323,7 @@ func CheckRuntime(runtime string) (*Runtime, error) {
 			return &Runtime{Name: k, Version: runtime}, nil
 		}
 	}
-	return nil, fmt.Errorf("runtime not supported, run 'deta new --help' to see all the supported runtimes")
+	return nil, fmt.Errorf("unsupported runtime")
 }
 
 // GetDefaultRuntimeVersion returns default runtime version
@@ -664,7 +664,7 @@ type pkgJSON struct {
 func (m *Manager) readDeps(runtime string) ([]string, error) {
 	depFile, ok := depFiles[runtime]
 	if !ok {
-		return nil, fmt.Errorf("unsupported runtime %s", runtime)
+		return nil, fmt.Errorf("unsupported runtime '%s'", runtime)
 	}
 	contents, _, err := m.readFile(filepath.Join(m.rootDir, depFile))
 	if err != nil {
