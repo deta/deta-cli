@@ -42,7 +42,7 @@ func removeCron(cmd *cobra.Command, args []string) error {
 	}
 
 	if !isInitialized {
-		return fmt.Errorf("no deta micro presentin '%s'", wd)
+		return fmt.Errorf("no deta micro present in '%s'", wd)
 	}
 
 	progInfo, err := runtimeManager.GetProgInfo()

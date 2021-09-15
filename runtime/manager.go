@@ -712,7 +712,7 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 // GetDepChanges gets dependencies from program
 func (m *Manager) GetDepChanges() (*DepChanges, error) {
 	progInfo, err := m.GetProgInfo()
-	if progInfo == nil {
+	if progInfo == nil || err != nil {
 		return nil, fmt.Errorf("no program information found")
 	}
 
@@ -721,6 +721,7 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 		if err != nil {
 			return nil, err
 		}
+		progInfo.RuntimeName = rtime.Name
 		progInfo.Runtime = rtime.Version
 	}
 	deps, err := m.readDeps(progInfo.RuntimeName)
