@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/deta/deta-cli/api"
@@ -11,12 +13,13 @@ import (
 )
 
 const (
-	SPACE = " "
+	SPACE                    = " "
+	LogPollDurationInSeconds = 1
 )
 
 var (
-	start   string
-	end     string
+	followFlag bool
+
 	logsCmd = &cobra.Command{
 		Use:   "logs [flags]",
 		Short: "Get logs from micro",
@@ -26,6 +29,7 @@ var (
 )
 
 func init() {
+	logsCmd.Flags().BoolVarP(&followFlag, "follow", "f", false, "follow logs")
 	rootCmd.AddCommand(logsCmd)
 }
 
@@ -58,31 +62,123 @@ func logs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get micro information")
 	}
 
-	lastToken := ""
+	logs, err := getLogs(progInfo.ID)
+	if err != nil {
+		return err
+	}
 
+	// no follow flag simply print the logs
+	if !followFlag {
+		for _, log := range logs {
+			printLogs(log.Timestamp, log.Log)
+		}
+
+		return nil
+	}
+
+	// follow flag specified
+	if err := followLogs(progInfo); err != nil {
+		return err
+	}
+	return nil
+}
+
+func getLogs(progID string) ([]api.LogType, error) {
+	lastToken := ""
 	logs := make([]api.LogType, 0)
 	for {
 		res, err := client.GetLogs(&api.GetLogsRequest{
-			ProgramID: progInfo.ID,
+			ProgramID: progID,
 			LastToken: lastToken,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		logs = append(logs, res.Logs...)
 
 		if len(res.LastToken) == 0 {
 			break
 		}
-
 		lastToken = res.LastToken
+	}
+	return logs, nil
+}
+
+// show new logs only shows logs after start and not in seenLogs
+func showNewLogs(progID string, start int64, seenLogs map[int64]struct{}) error {
+	logs, err := getLogs(progID)
+	if err != nil {
+		return err
 	}
 
 	for _, log := range logs {
-		printLogs(log.Timestamp, log.Log)
+		_, ok := seenLogs[log.Timestamp]
+		if !ok && log.Timestamp > start {
+			printLogs(log.Timestamp, log.Log)
+			seenLogs[log.Timestamp] = struct{}{}
+		}
+	}
+	return nil
+}
+
+// follow logs polls for new logs
+// waits on a poll ticker or a signal
+func followLogs(progInfo *runtime.ProgInfo) error {
+	start := time.Now().UnixNano() / int64(time.Millisecond)
+
+	// signals channel
+	sigs := make(chan os.Signal, 1)
+
+	// notify on Ctrl+C, Ctrl+D, Terminate, Quit
+	signal.Notify(sigs,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+	)
+
+	fmt.Println("Listening for logs...")
+	// disable visor mode temporarily if it's on
+	enableVisor := false
+	if progInfo.Visor == "debug" {
+		err := client.UpdateVisorMode(&api.UpdateVisorModeRequest{
+			ProgramID: progInfo.ID,
+			Mode:      "off",
+		})
+		if err != nil {
+			return err
+		}
+		enableVisor = true
 	}
 
-	return nil
+	// log poll ticker
+	ticker := time.NewTicker(LogPollDurationInSeconds * time.Second)
+	defer ticker.Stop()
+
+	// track seen logs
+	seenLogs := make(map[int64]struct{})
+	for {
+		select {
+		case <-sigs:
+			ticker.Stop()
+			if !enableVisor {
+				return nil
+			}
+			// renable visor if visor was on
+			err := client.UpdateVisorMode(&api.UpdateVisorModeRequest{
+				ProgramID: progInfo.ID,
+				Mode:      "debug",
+			})
+			if err != nil {
+				return fmt.Errorf("failed to renable visor, please renable with `deta visor enable`")
+			}
+			return nil
+		case <-ticker.C:
+			if err := showNewLogs(progInfo.ID, start, seenLogs); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func printLogs(timestamp int64, message string) {
