@@ -120,7 +120,7 @@ func parseRuntime(runtimeName string) (*runtime.Runtime, error) {
 
 	progRuntime, err := runtime.CheckRuntime(newRuntimeName)
 	if err != nil {
-		return nil, fmt.Errorf("'%s' %s", runtimeName, err.Error())
+		return nil, fmt.Errorf("%s '%s'", err.Error(), runtimeName)
 	}
 
 	return progRuntime, nil

@@ -144,5 +144,12 @@ Update the name of a deta micro with a new name "a-new-name".
 2. deta update --env env-file
 
 Update the enviroment variables of a deta micro from the file 'env-file'. 
-File 'env-file' must have env vars of format 'key=value'.`
+File 'env-file' must have env vars of format 'key=value'.
+
+3. deta update --runtime nodejs12
+
+Update the runtime of a deta micro.
+Available runtimes:
+	Python: python3.7, python3.9
+	Node: nodejs12, nodejs14`
 }
