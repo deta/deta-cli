@@ -248,7 +248,7 @@ func new(cmd *cobra.Command, args []string) error {
 
 	if dc != nil {
 		fmt.Println("Adding dependencies...")
-		command := runtime.DepCommands[res.Runtime]
+		command := runtime.DepCommands[progRuntime.Name]
 		if len(dc.Added) > 0 {
 			installCmd := fmt.Sprintf("%s install", command)
 			for _, a := range dc.Added {
