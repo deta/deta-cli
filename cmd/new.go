@@ -19,6 +19,7 @@ var (
 	pythonFlag  bool
 	progName    string
 	projectName string
+	runtimeName string
 
 	newCmd = &cobra.Command{
 		Use:     "new [flags] [path]",
@@ -35,6 +36,7 @@ func init() {
 	newCmd.Flags().BoolVarP(&pythonFlag, "python", "p", false, "create a micro with python runtime")
 	newCmd.Flags().StringVar(&progName, "name", "", "deta micro name")
 	newCmd.Flags().StringVar(&projectName, "project", "", "project to create the micro under")
+	newCmd.Flags().StringVar(&runtimeName, "runtime", "", "runtime version\n\tPython: python3.7, python3.9\n\tNode: nodejs12, nodejs14")
 
 	rootCmd.AddCommand(newCmd)
 }
@@ -42,6 +44,10 @@ func init() {
 func new(cmd *cobra.Command, args []string) error {
 	if nodeFlag && pythonFlag {
 		return fmt.Errorf("can not set both node and python flags")
+	}
+
+	if (nodeFlag || pythonFlag) && len(runtimeName) != 0 {
+		return fmt.Errorf("can not set both node/python flags and runtime flag")
 	}
 
 	var wd string
@@ -105,21 +111,37 @@ func new(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if !isEmpty {
+	if !isEmpty && len(runtimeName) == 0 {
 		progRuntime, err = runtimeManager.GetRuntime()
 		if err != nil {
 			return err
 		}
-		if nodeFlag && progRuntime != runtime.Node {
+		if nodeFlag && progRuntime.Name != runtime.Node {
 			return fmt.Errorf("'%s' does not contain node entrypoint file", wd)
-		} else if pythonFlag && progRuntime != runtime.Python {
+		} else if pythonFlag && progRuntime.Name != runtime.Python {
 			return fmt.Errorf("'%s' does not contain python entrypoint file", wd)
 		}
 	} else {
 		if nodeFlag {
-			progRuntime = runtime.Node
+			progRuntime = &runtime.Runtime{
+				Name:    runtime.Node,
+				Version: runtime.GetDefaultRuntimeVersion(runtime.Node),
+			}
 		} else if pythonFlag {
-			progRuntime = runtime.Python
+			progRuntime = &runtime.Runtime{
+				Name:    runtime.Python,
+				Version: runtime.GetDefaultRuntimeVersion(runtime.Python),
+			}
+		} else if len(runtimeName) != 0 {
+			newRuntimeName := runtimeName
+			if strings.Contains(runtimeName, runtime.Node) {
+				newRuntimeName = fmt.Sprintf("%s.x", runtimeName)
+			}
+
+			progRuntime, err = runtime.CheckRuntime(newRuntimeName)
+			if err != nil {
+				return fmt.Errorf("'%s' %s", runtimeName, err.Error())
+			}
 		} else {
 			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python'\n")
 			return nil
@@ -141,7 +163,7 @@ func new(cmd *cobra.Command, args []string) error {
 		Space:   userInfo.DefaultSpace,
 		Project: project,
 		Name:    progName,
-		Runtime: progRuntime,
+		Runtime: progRuntime.Version,
 	}
 
 	// send new program request
@@ -231,7 +253,7 @@ func new(cmd *cobra.Command, args []string) error {
 
 	if dc != nil {
 		fmt.Println("Adding dependencies...")
-		command := runtime.DepCommands[res.Runtime]
+		command := runtime.DepCommands[progRuntime.Name]
 		if len(dc.Added) > 0 {
 			installCmd := fmt.Sprintf("%s install", command)
 			for _, a := range dc.Added {
@@ -283,5 +305,10 @@ Create a new deta micro with the node runtime in the directory './my-node-micro'
 3. deta new --python --name my-github-webhook webhooks/github-deta
 
 Create a new deta micro with the python runtime, name 'my-github-webhook' and in directory 'webhooks/github-deta'. 
-'./my-node-micro' must not contain a node entrypoint file ('index.js') if directory is already present. `
+'webhooks/github-deta' must not contain a node entrypoint file ('index.js') if directory is already present.
+
+4. deta new --runtime nodejs12 --name my-node-micro
+
+Create a new deta micro with the node (nodejs12.x) runtime in the directory './my-node-micro'.
+'./my-node-micro' must not contain a python entrypoint file ('main.py') if directory is already present. `
 }

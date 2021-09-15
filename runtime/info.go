@@ -16,19 +16,20 @@ type EnvChanges struct {
 
 // ProgInfo program info
 type ProgInfo struct {
-	ID      string   `json:"id"`
-	Space   int64    `json:"space"`
-	Runtime string   `json:"runtime"`
-	Name    string   `json:"name"`
-	Path    string   `json:"path"`
-	Project string   `json:"project"`
-	Account string   `json:"account"`
-	Region  string   `json:"region"`
-	Deps    []string `json:"deps"`
-	Envs    []string `json:"envs"`
-	Public  bool     `json:"public"`
-	Visor   string   `json:"log_level"`
-	Cron    string   `json:"cron"`
+	ID          string   `json:"id"`
+	Space       int64    `json:"space"`
+	Runtime     string   `json:"runtime"` // runtime version eg: nodejs12.x
+	RuntimeName string   `json:"-"`
+	Name        string   `json:"name"`
+	Path        string   `json:"path"`
+	Project     string   `json:"project"`
+	Account     string   `json:"account"`
+	Region      string   `json:"region"`
+	Deps        []string `json:"deps"`
+	Envs        []string `json:"envs"`
+	Public      bool     `json:"public"`
+	Visor       string   `json:"log_level"`
+	Cron        string   `json:"cron"`
 }
 
 // unmarshals data into a ProgInfo
