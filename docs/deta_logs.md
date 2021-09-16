@@ -1,19 +1,20 @@
-## deta watch
+## deta logs
 
-Deploy changes in real time
+Get logs from micro
 
 ### Synopsis
 
-Deploy changes in real time
+Get logs from micro
 
 ```
-deta watch [path] [flags]
+deta logs [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for watch
+  -f, --follow   follow logs
+  -h, --help     help for logs
 ```
 
 ### SEE ALSO
