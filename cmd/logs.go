@@ -22,9 +22,12 @@ var (
 
 	logsCmd = &cobra.Command{
 		Use:   "logs [flags]",
-		Short: "Get logs from micro",
-		Args:  cobra.NoArgs,
-		RunE:  logs,
+		Short: "Get logs from a micro",
+		Long: `Get logs from a visor disabled micro of the last 30 mins. 
+Use command with the --follow flag to follow logs.
+Using --follow automatically disables visor and renables it when the command exits.`,
+		Args: cobra.NoArgs,
+		RunE: logs,
 	}
 )
 
