@@ -140,7 +140,7 @@ func clone(cmd *cobra.Command, args []string) error {
 		cleanup(wd)
 		return err
 	}
-	fmt.Println(fmt.Sprintf("Successfully cloned deta micro to '%s'", wd))
+	fmt.Printf("Successfully cloned deta micro to '%s'\n", wd)
 	return nil
 }
 

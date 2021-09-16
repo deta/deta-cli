@@ -89,7 +89,7 @@ func createAPIKey(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to save to file '%s'", outfilepath)
 		}
-		fmt.Println(fmt.Sprintf("Saved to file '%s'", outfilepath))
+		fmt.Printf("Saved to file '%s'\n", outfilepath)
 	}
 	return nil
 }

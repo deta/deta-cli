@@ -49,7 +49,7 @@ func upgrade(cmd *cobra.Command, args []string) error {
 		upgradingTo = versionFlag
 	}
 	if detaVersion == upgradingTo {
-		fmt.Println(fmt.Sprintf("Version already %s, no upgrade required", upgradingTo))
+		fmt.Printf("Version already %s, no upgrade required\n", upgradingTo)
 		return nil
 	}
 
@@ -81,7 +81,7 @@ func upgradeUnix() error {
 		msg = fmt.Sprintf("%s to version %s", msg, versionFlag)
 		shCmd = exec.Command("sh", "-c", co, "upgrade", versionFlag)
 	}
-	fmt.Println(fmt.Sprintf("%s...", msg))
+	fmt.Printf("%s...\n", msg)
 
 	shOutput, err := shCmd.CombinedOutput()
 	fmt.Println(string(shOutput))

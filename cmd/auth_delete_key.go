@@ -60,7 +60,7 @@ func deleteAPIKey(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(fmt.Sprintf("Succesfully deleted api key '%s'", apiKeyName))
+	fmt.Printf("Succesfully deleted api key '%s'\n", apiKeyName)
 	return nil
 }
 
