@@ -16,14 +16,13 @@ const (
 var (
 	// set with Makefile during compilation
 	detaVersion string
-	goVersion   string
 	platform    string
 
 	versionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "Print deta version",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(fmt.Sprintf("%s %s %s", rootCmd.Use, detaVersion, platform))
+			fmt.Printf("%s %s %s\n", rootCmd.Use, detaVersion, platform)
 		},
 	}
 )
@@ -85,5 +84,4 @@ func checkVersion(c chan *checkVersionMsg) {
 	cm.isLower = detaVersion != latestVersion.Tag && !latestVersion.Prerelease
 	cm.err = nil
 	c <- cm
-	return
 }

@@ -37,11 +37,11 @@ func pull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if !isInitialized {
-		return fmt.Errorf(fmt.Sprintf("no deta micro initialized in current directory"))
+		return fmt.Errorf("no deta micro initialized in current directory")
 	}
 
 	if !forcePull {
-		fmt.Println(fmt.Sprintf("Files already present may be overwritten. Continue? [y/n]"))
+		fmt.Println("Files already present may be overwritten. Continue? [y/n]")
 		var cont string
 		fmt.Scanf("%s", &cont)
 		if strings.ToLower(cont) != "y" {
@@ -75,7 +75,7 @@ func pull(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(fmt.Sprintf("Successfully pulled latest deployed code"))
+	fmt.Println("Successfully pulled latest deployed code")
 	return nil
 }
 

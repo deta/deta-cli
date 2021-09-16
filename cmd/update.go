@@ -50,6 +50,9 @@ func update(cmd *cobra.Command, args []string) error {
 	}
 
 	isInitialized, err := runtimeManager.IsInitialized()
+	if err != nil {
+		return err
+	}
 	if !isInitialized {
 		return fmt.Errorf("no deta micro initialized in `%s'", wd)
 	}

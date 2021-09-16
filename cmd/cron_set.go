@@ -79,7 +79,7 @@ func setCron(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(fmt.Sprintf(`Successfully set micro to schedule for "%s"`, expr))
+	fmt.Printf("Successfully set micro to schedule for '%s'\n", expr)
 
 	progInfo.Cron = expr
 	runtimeManager.StoreProgInfo(progInfo)

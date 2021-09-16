@@ -13,10 +13,11 @@ import (
 
 var (
 	watchCmd = &cobra.Command{
-		Use:   "watch [path]",
-		Short: "Deploy changes in real time",
-		RunE:  watch,
-		Args:  cobra.MaximumNArgs(1),
+		Use:     "watch [path]",
+		Short:   "Deploy changes in real time",
+		RunE:    watch,
+		Example: watchExamples(),
+		Args:    cobra.MaximumNArgs(1),
 	}
 )
 
