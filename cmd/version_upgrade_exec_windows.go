@@ -4,34 +4,26 @@ package cmd
 
 import (
 	"fmt"
-
-	ps "github.com/bhendo/go-powershell"
-	"github.com/bhendo/go-powershell/backend"
+	"os/exec"
 )
 
 func upgradeWin() error {
-	back := &backend.Local{}
-
-	shell, err := ps.New(back)
-	if err != nil {
-		return err
-	}
-
-	defer shell.Exit()
-
 	msg := "Upgrading deta cli"
 	cmd := "iwr https://get.deta.dev/cli.ps1 -useb | iex"
+
 	if versionFlag != "" {
 		msg = fmt.Sprintf("%s to version %s", msg, versionFlag)
 		cmd = fmt.Sprintf(`$v="%s"; %s`, versionFlag, cmd)
 	}
 	fmt.Println(fmt.Sprintf("%s...", msg))
 
-	stdout, stderr, err := shell.Execute(cmd)
+	pshellCmd := exec.Command("powershell", cmd)
+
+	stdout, err := pshellCmd.CombinedOutput()
+	fmt.Println(string(stdout))
 	if err != nil {
-		fmt.Println(stderr)
 		return err
 	}
-	fmt.Println(stdout)
+
 	return nil
 }
