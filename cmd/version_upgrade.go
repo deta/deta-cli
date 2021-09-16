@@ -27,7 +27,11 @@ func init() {
 }
 
 func upgrade(cmd *cobra.Command, args []string) error {
-	latest, _ := getLatestVersion()
+	latest, err := getLatestVersion()
+	if err != nil {
+		return err
+	}
+
 	upgradingTo := latest.Tag
 	if versionFlag != "" {
 		if !strings.HasPrefix(versionFlag, "v") {
