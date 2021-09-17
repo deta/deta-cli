@@ -481,7 +481,7 @@ func (m *Manager) StoreState() error {
 		if err != nil {
 			return err
 		}
-		sm[path] = hashSum
+		sm[filepath.ToSlash(path)] = hashSum
 		return nil
 	})
 	if err != nil {
@@ -617,7 +617,7 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 
 		// update deletions
 		if _, ok := deletions[filepath.ToSlash(path)]; ok {
-			delete(deletions, path)
+			delete(deletions, filepath.ToSlash(path))
 		}
 
 		checksum, err := m.calcChecksum(filepath.Join(m.rootDir, path))
