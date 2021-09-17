@@ -63,7 +63,7 @@ func update(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(progName) != 0 {
-		fmt.Println("Updating the name..")
+		fmt.Println("Updating the name...")
 		err := client.UpdateProgName(&api.UpdateProgNameRequest{
 			ProgramID: progInfo.ID,
 			Name:      progName,
