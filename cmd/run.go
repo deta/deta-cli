@@ -29,10 +29,13 @@ func init() {
 
 func run(cmd *cobra.Command, args []string) error {
 	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 
 	runtimeManager, err := runtime.NewManager(&wd, false)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	isInitialized, err := runtimeManager.IsInitialized()

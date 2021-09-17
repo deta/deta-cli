@@ -65,13 +65,13 @@ func logs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get micro information")
 	}
 
-	logs, err := getLogs(progInfo.ID)
-	if err != nil {
-		return err
-	}
-
 	// no follow flag simply print the logs
 	if !followFlag {
+		logs, err := getLogs(progInfo.ID)
+		if err != nil {
+			return err
+		}
+
 		for _, log := range logs {
 			printLogs(log.Timestamp, log.Log)
 		}
@@ -89,6 +89,8 @@ func getLogs(progID string) ([]api.LogType, error) {
 	for {
 		res, err := client.GetLogs(&api.GetLogsRequest{
 			ProgramID: progID,
+			Start:     time.Now().UTC().Add(-30*time.Minute).UnixNano() / int64(time.Millisecond),
+			End:       time.Now().UTC().UnixNano() / int64(time.Millisecond),
 			LastToken: lastToken,
 		})
 		if err != nil {
