@@ -80,10 +80,7 @@ func logs(cmd *cobra.Command, args []string) error {
 	}
 
 	// follow flag specified
-	if err := followLogs(progInfo); err != nil {
-		return err
-	}
-	return nil
+	return followLogs(progInfo)
 }
 
 func getLogs(progID string) ([]api.LogType, error) {
@@ -127,7 +124,7 @@ func showNewLogs(progID string, start int64, seenLogs map[int64]struct{}) error 
 // follow logs polls for new logs
 // waits on a poll ticker or a signal
 func followLogs(progInfo *runtime.ProgInfo) error {
-	start := time.Now().UnixNano() / int64(time.Millisecond)
+	start := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 
 	// signals channel
 	sigs := make(chan os.Signal, 1)
