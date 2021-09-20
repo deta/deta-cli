@@ -29,10 +29,13 @@ func init() {
 
 func run(cmd *cobra.Command, args []string) error {
 	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 
 	runtimeManager, err := runtime.NewManager(&wd, false)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	isInitialized, err := runtimeManager.IsInitialized()
@@ -50,7 +53,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if progInfo == nil {
-		return fmt.Errorf(fmt.Sprintf("failed to get micro information"))
+		return fmt.Errorf("failed to get micro information")
 	}
 
 	action, progArgs := parseArgs(args)
@@ -91,11 +94,11 @@ func parseArgs(args []string) (string, map[string]interface{}) {
 					i = j
 				}
 				if v, ok := progInput[key]; ok {
-					switch v.(type) {
+					switch vt := v.(type) {
 					case string:
-						progInput[key] = []string{v.(string), value}
+						progInput[key] = []string{vt, value}
 					case []string:
-						progInput[key] = append(v.([]string), value)
+						progInput[key] = append(vt, value)
 					}
 				} else {
 					progInput[key] = value

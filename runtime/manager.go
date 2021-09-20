@@ -26,10 +26,8 @@ const (
 
 	NodeSkipPattern = `(node_modules)|(.*~$)|(.*\.deta)`
 
-	// Python runtime
-	Python = "python3.7"
-	// Node runtime
-	Node = "nodejs12.x"
+	Python = "python"
+	Node   = "node"
 
 	// DefaultProject default project slug
 	DefaultProject = "default"
@@ -46,6 +44,12 @@ type Pattern struct {
 }
 
 var (
+	// supported runtimes Note: index 0 is the default runtime
+	runtimes = map[string][]string{
+		Python: {"python3.9", "python3.7"},
+		Node:   {"nodejs14.x", "nodejs12.x"},
+	}
+
 	// maps entrypoint files to runtimes
 	entryPoints = map[string]string{
 		"main.py":  Python,
@@ -102,6 +106,12 @@ type Manager struct {
 	statePath    string               // path to state file about the program
 	ignorePath   string               // path to .detaignore file
 	skipPaths    map[string][]Pattern // files that will be skipped
+}
+
+// Runtime holds name and version of current runtime used
+type Runtime struct {
+	Name    string
+	Version string
 }
 
 // NewManager returns a new runtime manager for the root dir of the program
@@ -203,7 +213,7 @@ func (m *Manager) handleIgnoreFile() error {
 				}
 			}
 
-			m.skipPaths[runtime] = append([]Pattern{pattern}, m.skipPaths[runtime]...)
+			m.skipPaths[runtime.Name] = append([]Pattern{pattern}, m.skipPaths[runtime.Name]...)
 		}
 	}
 
@@ -228,7 +238,21 @@ func (m *Manager) GetProgInfo() (*ProgInfo, error) {
 		}
 		return nil, err
 	}
-	return progInfoFromBytes(contents)
+
+	progInfo, err := progInfoFromBytes(contents)
+	if err != nil {
+		return nil, err
+	}
+
+	runtime, err := CheckRuntime(progInfo.Runtime)
+	if err != nil {
+		return nil, err
+	}
+
+	progInfo.RuntimeName = runtime.Name
+	progInfo.Runtime = runtime.Version
+
+	return progInfo, nil
 }
 
 // StoreUserInfo stores the user info
@@ -292,14 +316,32 @@ func (m *Manager) IsProgDirEmpty() (bool, error) {
 	return true, nil
 }
 
+// CheckRuntime checks if given runtime is supported
+func CheckRuntime(runtime string) (*Runtime, error) {
+	for k, v := range runtimes {
+		if contains(v, runtime) {
+			return &Runtime{Name: k, Version: runtime}, nil
+		}
+	}
+	return nil, fmt.Errorf("unsupported runtime")
+}
+
+// GetDefaultRuntimeVersion returns default runtime version
+func GetDefaultRuntimeVersion(name string) string {
+	return runtimes[name][0] // index 0 is the default runtime
+}
+
 // GetRuntime gets runtime from proginfo or figures out the runtime of the program from entrypoint file if present in the root dir
-func (m *Manager) GetRuntime() (string, error) {
+func (m *Manager) GetRuntime() (*Runtime, error) {
 	progInfo, _ := m.GetProgInfo()
 	if progInfo != nil {
-		return progInfo.Runtime, nil
+		return &Runtime{
+			Name:    progInfo.RuntimeName,
+			Version: progInfo.Runtime,
+		}, nil
 	}
 
-	var runtime string
+	var runtime *Runtime
 	var found bool
 	err := filepath.Walk(m.rootDir, func(path string, info os.FileInfo, err error) error {
 		if path == m.rootDir {
@@ -312,7 +354,10 @@ func (m *Manager) GetRuntime() (string, error) {
 		if r, ok := entryPoints[filename]; ok {
 			if !found {
 				found = true
-				runtime = r
+				runtime = &Runtime{
+					Name:    r,
+					Version: GetDefaultRuntimeVersion(r),
+				}
 			} else {
 				return errors.New("conflicting entrypoint files found")
 			}
@@ -320,10 +365,10 @@ func (m *Manager) GetRuntime() (string, error) {
 		return nil
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if !found {
-		return "", ErrNoEntrypoint
+		return nil, ErrNoEntrypoint
 	}
 	return runtime, nil
 }
@@ -347,7 +392,7 @@ func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
 	}
 
 	for _, re := range m.skipPaths[runtime] {
-		if re.Value.MatchString(path) {
+		if re.Value.MatchString(filepath.ToSlash(path)) {
 			return re.Skip, nil
 		}
 	}
@@ -417,7 +462,7 @@ func (m *Manager) StoreState() error {
 			return err
 		}
 
-		shouldSkip, err := m.shouldSkip(path, r)
+		shouldSkip, err := m.shouldSkip(path, r.Name)
 		if err != nil {
 			return err
 		}
@@ -436,7 +481,7 @@ func (m *Manager) StoreState() error {
 		if err != nil {
 			return err
 		}
-		sm[path] = hashSum
+		sm[filepath.ToSlash(path)] = hashSum
 		return nil
 	})
 	if err != nil {
@@ -489,7 +534,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 			return err
 		}
 
-		shouldSkip, err := m.shouldSkip(path, r)
+		shouldSkip, err := m.shouldSkip(path, r.Name)
 		if err != nil {
 			return err
 		}
@@ -556,7 +601,7 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		if err != nil {
 			return err
 		}
-		shouldSkip, err := m.shouldSkip(path, r)
+		shouldSkip, err := m.shouldSkip(path, r.Name)
 		if err != nil {
 			return err
 		}
@@ -572,7 +617,7 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 
 		// update deletions
 		if _, ok := deletions[filepath.ToSlash(path)]; ok {
-			delete(deletions, path)
+			delete(deletions, filepath.ToSlash(path))
 		}
 
 		checksum, err := m.calcChecksum(filepath.Join(m.rootDir, path))
@@ -619,7 +664,7 @@ type pkgJSON struct {
 func (m *Manager) readDeps(runtime string) ([]string, error) {
 	depFile, ok := depFiles[runtime]
 	if !ok {
-		return nil, fmt.Errorf("unsupported runtime %s", runtime)
+		return nil, fmt.Errorf("unsupported runtime '%s'", runtime)
 	}
 	contents, _, err := m.readFile(filepath.Join(m.rootDir, depFile))
 	if err != nil {
@@ -667,17 +712,19 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 // GetDepChanges gets dependencies from program
 func (m *Manager) GetDepChanges() (*DepChanges, error) {
 	progInfo, err := m.GetProgInfo()
-	if progInfo == nil {
+	if progInfo == nil || err != nil {
 		return nil, fmt.Errorf("no program information found")
 	}
 
 	if progInfo.Runtime == "" {
-		progInfo.Runtime, err = m.GetRuntime()
+		rtime, err := m.GetRuntime()
 		if err != nil {
 			return nil, err
 		}
+		progInfo.RuntimeName = rtime.Name
+		progInfo.Runtime = rtime.Version
 	}
-	deps, err := m.readDeps(progInfo.Runtime)
+	deps, err := m.readDeps(progInfo.RuntimeName)
 	if err != nil {
 		return nil, err
 	}

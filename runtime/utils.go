@@ -20,3 +20,14 @@ func readLines(data []byte) ([]string, error) {
 
 	return lines, scanner.Err()
 }
+
+// contains checks if the given string exists on given array
+func contains(arr []string, str string) bool {
+	for _, v := range arr {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}

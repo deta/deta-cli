@@ -23,7 +23,7 @@ var (
 
 func init() {
 	cloneCmd.Flags().StringVar(&progName, "name", "", "deta micro name")
-	cloneCmd.Flags().StringVar(&projectName, "project", "", "deta project")
+	cloneCmd.Flags().StringVar(&projectName, "project", "", "project to clone the micro from")
 	cloneCmd.MarkFlagRequired("name")
 
 	rootCmd.AddCommand(cloneCmd)
@@ -140,7 +140,7 @@ func clone(cmd *cobra.Command, args []string) error {
 		cleanup(wd)
 		return err
 	}
-	fmt.Println(fmt.Sprintf("Successfully cloned deta micro to '%s'", wd))
+	fmt.Printf("Successfully cloned deta micro to '%s'\n", wd)
 	return nil
 }
 

@@ -58,9 +58,9 @@ func updateVisor(mode string, args []string) error {
 	if err != nil {
 		return err
 	}
-	msg := fmt.Sprintf("Successfully disabled visor mode")
+	msg := "Successfully disabled visor mode"
 	if mode == "debug" {
-		msg = fmt.Sprintf("Successfully enabled visor mode")
+		msg = "Successfully enabled visor mode"
 	}
 	fmt.Println(msg)
 

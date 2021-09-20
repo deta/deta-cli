@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/deta/deta-cli/api"
 	"github.com/deta/deta-cli/runtime"
@@ -17,8 +16,11 @@ var (
 
 type progDetailsOutput struct {
 	Name     string   `json:"name"`
+	ID       string   `json:"id"`
+	Project  string   `json:"project"`
 	Runtime  string   `json:"runtime"`
 	Endpoint string   `json:"endpoint"`
+	Region   string   `json:"region"`
 	Deps     []string `json:"dependencies,omitempty"`
 	Envs     []string `json:"environment_variables,omitempty"`
 	Visor    string   `json:"visor"`
@@ -29,13 +31,17 @@ type progDetailsOutput struct {
 func progInfoToOutput(p *runtime.ProgInfo) (string, error) {
 	o := progDetailsOutput{
 		Name:    p.Name,
+		ID:      p.ID,
+		Project: p.Project,
 		Runtime: p.Runtime,
+		Region:  p.Region,
 		Deps:    p.Deps,
 		Envs:    p.Envs,
 		Visor:   "enabled",
 		Auth:    "enabled",
 		Cron:    p.Cron,
 	}
+
 	o.Endpoint = fmt.Sprintf("https://%s.%s", p.Path, gatewayDomain)
 	if p.Visor == "off" {
 		o.Visor = "disabled"
@@ -105,16 +111,17 @@ func getUserInfo(rm *runtime.Manager, client *api.DetaClient) (*runtime.UserInfo
 	return u, nil
 }
 
-func parseDateTime(str string) (int64, error) {
-	str = strings.Trim(str, SPACE)
-	if len(str) != 0 {
-		dateTime, err := time.Parse(time.RFC3339, str)
-		if err != nil {
-			return 0, fmt.Errorf("invalid date time format(RFC3339) %s", str)
-		}
-
-		return dateTime.UnixNano() / int64(time.Millisecond), nil
+// parseRuntime takes runtimeName as string and returns Runtine struct
+func parseRuntime(runtimeName string) (*runtime.Runtime, error) {
+	newRuntimeName := runtimeName
+	if strings.Contains(runtimeName, runtime.Node) {
+		newRuntimeName = fmt.Sprintf("%s.x", runtimeName)
 	}
 
-	return 0, nil
+	progRuntime, err := runtime.CheckRuntime(newRuntimeName)
+	if err != nil {
+		return nil, fmt.Errorf("%s '%s'", err.Error(), runtimeName)
+	}
+
+	return progRuntime, nil
 }
