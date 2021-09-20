@@ -65,13 +65,13 @@ func logs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get micro information")
 	}
 
-	logs, err := getLogs(progInfo.ID)
-	if err != nil {
-		return err
-	}
-
 	// no follow flag simply print the logs
 	if !followFlag {
+		logs, err := getLogs(progInfo.ID)
+		if err != nil {
+			return err
+		}
+
 		for _, log := range logs {
 			printLogs(log.Timestamp, log.Log)
 		}
@@ -80,18 +80,18 @@ func logs(cmd *cobra.Command, args []string) error {
 	}
 
 	// follow flag specified
-	if err := followLogs(progInfo); err != nil {
-		return err
-	}
-	return nil
+	return followLogs(progInfo)
 }
 
 func getLogs(progID string) ([]api.LogType, error) {
 	lastToken := ""
 	logs := make([]api.LogType, 0)
+	current := time.Now().UTC()
 	for {
 		res, err := client.GetLogs(&api.GetLogsRequest{
 			ProgramID: progID,
+			Start:     current.Add(-30*time.Minute).UnixNano() / int64(time.Millisecond),
+			End:       current.UnixNano() / int64(time.Millisecond),
 			LastToken: lastToken,
 		})
 		if err != nil {
@@ -127,7 +127,7 @@ func showNewLogs(progID string, start int64, seenLogs map[int64]struct{}) error 
 // follow logs polls for new logs
 // waits on a poll ticker or a signal
 func followLogs(progInfo *runtime.ProgInfo) error {
-	start := time.Now().UnixNano() / int64(time.Millisecond)
+	start := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 
 	// signals channel
 	sigs := make(chan os.Signal, 1)
