@@ -86,11 +86,12 @@ func logs(cmd *cobra.Command, args []string) error {
 func getLogs(progID string) ([]api.LogType, error) {
 	lastToken := ""
 	logs := make([]api.LogType, 0)
+	current := time.Now().UTC()
 	for {
 		res, err := client.GetLogs(&api.GetLogsRequest{
 			ProgramID: progID,
-			Start:     time.Now().UTC().Add(-30*time.Minute).UnixNano() / int64(time.Millisecond),
-			End:       time.Now().UTC().UnixNano() / int64(time.Millisecond),
+			Start:     current.Add(-30*time.Minute).UnixNano() / int64(time.Millisecond),
+			End:       current.UnixNano() / int64(time.Millisecond),
 			LastToken: lastToken,
 		})
 		if err != nil {
