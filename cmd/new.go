@@ -57,6 +57,10 @@ func new(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		wd = cd
+
+		if progName != "" {
+			wd = fmt.Sprintf("%s/%s", wd, progName)
+		}
 	} else {
 		wd = args[0]
 	}
