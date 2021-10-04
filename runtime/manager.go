@@ -901,13 +901,17 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 	return nil
 }
 
-// Clean removes files creatd by the rutime manager
+// Clean removes `.deta` folder created by the runtime manager if it's empty
 func (m *Manager) Clean() error {
-	isInitialized, err := m.IsInitialized()
+	isEmpty, err := isDirEmpty(m.detaPath)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
 		return err
 	}
-	if !isInitialized {
+	// only delete `m.detaPath` if it's empty
+	if isEmpty {
 		return os.RemoveAll(m.detaPath)
 	}
 	return nil

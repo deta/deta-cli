@@ -3,6 +3,9 @@ package runtime
 import (
 	"bufio"
 	"bytes"
+	"errors"
+	"io"
+	"os"
 )
 
 // other binary extensions
@@ -30,4 +33,20 @@ func contains(arr []string, str string) bool {
 	}
 
 	return false
+}
+
+// checks if dir is empty
+func isDirEmpty(path string) (bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	names, err := f.Readdirnames(-1)
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return true, nil
+		}
+		return false, err
+	}
+	return len(names) == 0, nil
 }
