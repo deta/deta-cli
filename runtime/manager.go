@@ -46,7 +46,7 @@ type Pattern struct {
 var (
 	// supported runtimes Note: index 0 is the default runtime
 	runtimes = map[string][]string{
-		Python: {"python3.9", "python3.7"},
+		Python: {"python3.9", "python3.8", "python3.7"},
 		Node:   {"nodejs14.x", "nodejs12.x"},
 	}
 
