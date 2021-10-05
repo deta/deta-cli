@@ -5,13 +5,10 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"net/http"
 	"os"
+	"strings"
 )
-
-// other binary extensions
-var otherBinaryExts = map[string]struct{}{
-	".mo": {},
-}
 
 func readLines(data []byte) ([]string, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(data))
@@ -49,4 +46,28 @@ func isDirEmpty(path string) (bool, error) {
 		return false, err
 	}
 	return len(names) == 0, nil
+}
+
+// check if data is binary content type
+func isBinary(data []byte) bool {
+	nonBinaryPrefixes := []string{
+		"text/",
+	}
+	commonNonBinaryTypes := map[string]struct{}{
+		"application/json":         struct{}{},
+		"application/vnd.api+json": struct{}{},
+		"image/svg+xml":            struct{}{},
+		"application/xhtml+xml":    struct{}{},
+		"application/xml":          struct{}{},
+	}
+	contentType := http.DetectContentType(data)
+	for _, p := range nonBinaryPrefixes {
+		if strings.HasPrefix(contentType, p) {
+			return false
+		}
+	}
+	if _, ok := commonNonBinaryTypes[contentType]; ok {
+		return false
+	}
+	return true
 }

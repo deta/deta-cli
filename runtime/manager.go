@@ -14,8 +14,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"github.com/h2non/filetype"
 )
 
 const (
@@ -416,22 +414,7 @@ func (m *Manager) readFile(path string) ([]byte, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-
-	kind, err := filetype.Match(contents)
-	if err != nil {
-		if errors.Is(err, filetype.ErrEmptyBuffer) {
-			return contents, false, nil
-		}
-		return nil, false, err
-	}
-	isBinary := true
-	if kind == filetype.Unknown {
-		isBinary = false
-		if _, ok := otherBinaryExts[filepath.Ext(path)]; ok {
-			isBinary = true
-		}
-	}
-	return contents, isBinary, nil
+	return contents, isBinary(contents), nil
 }
 
 // calculates the sha256 sum of contents of file in path
