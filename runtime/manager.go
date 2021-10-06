@@ -170,7 +170,7 @@ func (m *Manager) handleIgnoreFile() error {
 		return err
 	}
 
-	contents, _, err := m.readFile(m.ignorePath)
+	contents, err := m.readFile(m.ignorePath)
 	if err != nil {
 		return err
 	}
@@ -229,7 +229,7 @@ func (m *Manager) StoreProgInfo(p *ProgInfo) error {
 
 // GetProgInfo gets the program info stored
 func (m *Manager) GetProgInfo() (*ProgInfo, error) {
-	contents, _, err := m.readFile(m.progInfoPath)
+	contents, err := m.readFile(m.progInfoPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -264,7 +264,7 @@ func (m *Manager) StoreUserInfo(u *UserInfo) error {
 
 // GetUserInfo gets the user info
 func (m *Manager) GetUserInfo() (*UserInfo, error) {
-	contents, _, err := m.readFile(m.userInfoPath)
+	contents, err := m.readFile(m.userInfoPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -403,14 +403,19 @@ func (m *Manager) shouldSkip(path string, runtime string) (bool, error) {
 	return hidden, nil
 }
 
-// reads the contents of a file, returns contents and if file is binary or not
-func (m *Manager) readFile(path string) ([]byte, bool, error) {
+// reads the contents of a file, returns contents
+func (m *Manager) readFile(path string) ([]byte, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	defer f.Close()
-	contents, err := ioutil.ReadAll(f)
+	return ioutil.ReadAll(f)
+}
+
+// reads the contents of a file, returns contents and if file is binary or not
+func (m *Manager) readFileIsBinary(path string) ([]byte, bool, error) {
+	contents, err := m.readFile(path)
 	if err != nil {
 		return nil, false, err
 	}
@@ -419,7 +424,7 @@ func (m *Manager) readFile(path string) ([]byte, bool, error) {
 
 // calculates the sha256 sum of contents of file in path
 func (m *Manager) calcChecksum(path string) (string, error) {
-	contents, _, err := m.readFile(path)
+	contents, err := m.readFile(path)
 	if err != nil {
 		return "", err
 	}
@@ -485,7 +490,7 @@ func (m *Manager) StoreState() error {
 
 // gets the current stored state
 func (m *Manager) getStoredState() (stateMap, error) {
-	contents, _, err := m.readFile(m.statePath)
+	contents, err := m.readFile(m.statePath)
 	if err != nil {
 		return nil, err
 	}
@@ -531,7 +536,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 			return nil
 		}
 
-		contents, isBinary, err := m.readFile(filepath.Join(m.rootDir, path))
+		contents, isBinary, err := m.readFileIsBinary(filepath.Join(m.rootDir, path))
 		if err != nil {
 			return err
 		}
@@ -609,7 +614,7 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 		}
 
 		if storedState[filepath.ToSlash(path)] != checksum {
-			contents, isBinary, err := m.readFile(filepath.Join(m.rootDir, path))
+			contents, isBinary, err := m.readFileIsBinary(filepath.Join(m.rootDir, path))
 			if err != nil {
 				return err
 			}
@@ -649,7 +654,7 @@ func (m *Manager) readDeps(runtime string) ([]string, error) {
 	if !ok {
 		return nil, fmt.Errorf("unsupported runtime '%s'", runtime)
 	}
-	contents, _, err := m.readFile(filepath.Join(m.rootDir, depFile))
+	contents, err := m.readFile(filepath.Join(m.rootDir, depFile))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -754,7 +759,7 @@ func (m *Manager) GetDepChanges() (*DepChanges, error) {
 
 // readEnvs read env variables from the env file
 func (m *Manager) readEnvs(envFile string) (map[string]string, error) {
-	contents, _, err := m.readFile(filepath.Join(m.rootDir, envFile))
+	contents, err := m.readFile(filepath.Join(m.rootDir, envFile))
 	if err != nil {
 		return nil, err
 	}
