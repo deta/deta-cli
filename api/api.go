@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/deta/deta-cli/runtime"
 )
@@ -119,101 +118,6 @@ func (c *DetaClient) NewProgram(r *NewProgramRequest) (*NewProgramResponse, erro
 	return &resp, nil
 }
 
-// ViewProgramRequest request to view an existing program
-type ViewProgramRequest struct {
-	ProgramID string
-	Runtime   string
-	Account   string
-	Region    string
-}
-
-// ViewProgramResponse response to view program request
-type ViewProgramResponse struct {
-	Entrypoint string   `json:"file"`
-	Contents   string   `json:"contents"`
-	FileTree   []string `json:"tree"`
-}
-
-// ViewProgram sends a view program request
-// The response contains the contents of the entrypoint file and the file tree
-func (c *DetaClient) ViewProgram(r *ViewProgramRequest) (*ViewProgramResponse, error) {
-	headers := make(map[string]string)
-	c.injectResourceHeader(headers, r.Account, r.Region)
-
-	queryParams := map[string]string{
-		"runtime": r.Runtime,
-	}
-
-	i := &requestInput{
-		Path:        fmt.Sprintf("/%s/encoded/%s", viewerPath, r.ProgramID),
-		Method:      "GET",
-		Headers:     headers,
-		QueryParams: queryParams,
-		NeedsAuth:   true,
-	}
-
-	o, err := c.request(i)
-	if err != nil {
-		return nil, err
-	}
-
-	if o.Status != 200 {
-		msg := o.Error.Message
-		if msg == "" {
-			msg = o.Error.Errors[0]
-		}
-		return nil, fmt.Errorf("failed to view program: %v", msg)
-	}
-
-	var resp ViewProgramResponse
-	err = json.Unmarshal(o.Body, &resp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to view program: %v", err)
-	}
-	return &resp, nil
-}
-
-// ViewProgramFileRequest view program file request
-type ViewProgramFileRequest struct {
-	ProgramID string
-	Filepath  string
-	Account   string
-	Region    string
-}
-
-// ViewProgramFile view a particular file of the program
-func (c *DetaClient) ViewProgramFile(r *ViewProgramFileRequest) (*string, error) {
-	headers := make(map[string]string)
-	c.injectResourceHeader(headers, r.Account, r.Region)
-
-	queryParams := map[string]string{
-		"path": r.Filepath,
-	}
-
-	i := &requestInput{
-		Path:        fmt.Sprintf("/%s/encoded/file/%s", viewerPath, r.ProgramID),
-		Method:      "GET",
-		Headers:     headers,
-		QueryParams: queryParams,
-		NeedsAuth:   true,
-	}
-
-	o, err := c.request(i)
-	if err != nil {
-		return nil, err
-	}
-
-	if o.Status != 200 {
-		msg := o.Error.Message
-		if msg == "" {
-			msg = o.Error.Errors[0]
-		}
-		return nil, fmt.Errorf("failed to get '%s': %v", r.Filepath, msg)
-	}
-	resp := string(o.Body)
-	return &resp, nil
-}
-
 // DownloadProgramRequest download program request
 type DownloadProgramRequest struct {
 	ProgramID string
@@ -224,46 +128,35 @@ type DownloadProgramRequest struct {
 
 // DownloadProgramResponse download program response
 type DownloadProgramResponse struct {
-	Files map[string]string
+	ZipFile []byte
 }
 
 // DownloadProgram download all program files
 func (c *DetaClient) DownloadProgram(req *DownloadProgramRequest) (*DownloadProgramResponse, error) {
-	progFiles := make(map[string]string)
+	headers := make(map[string]string)
+	c.injectResourceHeader(headers, req.Account, req.Region)
 
-	viewProgReq := &ViewProgramRequest{
-		ProgramID: req.ProgramID,
-		Runtime:   req.Runtime,
-		Account:   req.Account,
-		Region:    req.Region,
+	i := &requestInput{
+		Path:      fmt.Sprintf("/%s/archives/%s", viewerPath, req.ProgramID),
+		Method:    "GET",
+		Headers:   headers,
+		NeedsAuth: true,
 	}
-	o, err := c.ViewProgram(viewProgReq)
+
+	o, err := c.request(i)
 	if err != nil {
 		return nil, err
 	}
-
-	progFiles[o.Entrypoint] = o.Contents
-
-	for _, file := range o.FileTree {
-		if file != o.Entrypoint {
-			if !strings.HasSuffix(file, "/") {
-				viewProgFileReq := &ViewProgramFileRequest{
-					ProgramID: req.ProgramID,
-					Filepath:  file,
-					Account:   req.Account,
-					Region:    req.Region,
-				}
-				contents, err := c.ViewProgramFile(viewProgFileReq)
-				if err != nil {
-					return nil, err
-				}
-				progFiles[file] = *contents
-			} else {
-				progFiles[file] = ""
-			}
+	if o.Status != 200 {
+		msg := o.Error.Message
+		if msg == "" {
+			msg = o.Error.Errors[0]
 		}
+		return nil, fmt.Errorf("failed to download micro: %v", msg)
 	}
-	return &DownloadProgramResponse{Files: progFiles}, err
+	return &DownloadProgramResponse{
+		ZipFile: o.Body,
+	}, nil
 }
 
 // ListSpaceItem an item in ListSpacesResponse

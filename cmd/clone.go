@@ -129,7 +129,7 @@ func clone(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = runtimeManager.WriteProgramFiles(o.Files, &wd, false)
+	err = runtimeManager.WriteProgramFiles(o.ZipFile, &wd, false, progInfo.Runtime)
 	if err != nil {
 		cleanup(wd)
 		runtimeManager.Clean()

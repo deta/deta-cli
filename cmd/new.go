@@ -210,7 +210,7 @@ func new(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		// write downloaded files to dir
-		err = runtimeManager.WriteProgramFiles(o.Files, nil, true)
+		err = runtimeManager.WriteProgramFiles(o.ZipFile, nil, true, res.Runtime)
 		if err != nil {
 			return err
 		}

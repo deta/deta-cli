@@ -62,6 +62,12 @@ var (
 		Node:   "package.json",
 	}
 
+	// maps lib entry files to runtimes
+	libEntryFiles = map[string][]string{
+		Python: []string{"_entry.py"},
+		Node:   []string{"_entry.js"},
+	}
+
 	// skipPaths maps runtimes to paths that should be skipped
 	skipPaths = map[string][]Pattern{
 		Python: {
@@ -852,7 +858,7 @@ func (m *Manager) GetEnvChanges(envFile string) (*EnvChanges, error) {
 }
 
 // WriteProgramFiles writes program files to target dir, target dir is relative to root dir if relative is true
-func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *string, relative bool) error {
+func (m *Manager) WriteProgramFiles(zipFile []byte, targetDir *string, relative bool, runtimeVersion string) error {
 	var writeDir string
 	if relative {
 		writeDir = m.rootDir
@@ -871,34 +877,13 @@ func (m *Manager) WriteProgramFiles(progFiles map[string]string, targetDir *stri
 		writeDir = *targetDir
 	}
 
-	// need to create dirs first before writing the files
-	for f := range progFiles {
-		dir, _ := filepath.Split(f)
-		if dir != "" {
-			dir = filepath.Join(writeDir, dir)
-			err := os.MkdirAll(dir, dirPermMode)
-			if err != nil {
-				return err
-			}
-		}
+	runtime, err := CheckRuntime(runtimeVersion)
+	if err != nil {
+		return err
 	}
 
-	// write the files
-	for file, content := range progFiles {
-		_, f := filepath.Split(file)
-		if f != "" {
-			file = filepath.Join(writeDir, file)
-			c, err := base64.StdEncoding.DecodeString(content)
-			if err != nil {
-				return err
-			}
-			err = ioutil.WriteFile(file, c, filePermMode)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	// unzip zip file into wrtie dir skipping lib entry file for runtime
+	return unzip(zipFile, writeDir, libEntryFiles[runtime.Name])
 }
 
 // Clean removes `.deta` folder created by the runtime manager if it's empty
