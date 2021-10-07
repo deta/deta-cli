@@ -36,7 +36,7 @@ func init() {
 	newCmd.Flags().BoolVarP(&pythonFlag, "python", "p", false, "create a micro with python runtime")
 	newCmd.Flags().StringVar(&progName, "name", "", "deta micro name")
 	newCmd.Flags().StringVar(&projectName, "project", "", "project to create the micro under")
-	newCmd.Flags().StringVar(&runtimeName, "runtime", "", "runtime version\n\tPython: python3.7, python3.9\n\tNode: nodejs12, nodejs14")
+	newCmd.Flags().StringVar(&runtimeName, "runtime", "", "runtime version\n\tPython: python3.7, python3.8, python3.9\n\tNode: nodejs12, nodejs14")
 
 	rootCmd.AddCommand(newCmd)
 }
