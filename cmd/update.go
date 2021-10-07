@@ -26,7 +26,7 @@ var (
 func init() {
 	updateCmd.Flags().StringVarP(&envsPath, "env", "e", "", "path to env file")
 	updateCmd.Flags().StringVarP(&progName, "name", "n", "", "new name of the micro")
-	updateCmd.Flags().StringVarP(&runtimeName, "runtime", "r", "", "runtime version\n\tPython: python3.7, python3.9\n\tNode: nodejs12, nodejs14")
+	updateCmd.Flags().StringVarP(&runtimeName, "runtime", "r", "", "runtime version\n\tPython: python3.7, python3.8, python3.9\n\tNode: nodejs12, nodejs14")
 	rootCmd.AddCommand(updateCmd)
 }
 
@@ -153,6 +153,6 @@ File 'env-file' must have env vars of format 'key=value'.
 
 Update the runtime of a deta micro.
 Available runtimes:
-	Python: python3.7, python3.9
+	Python: python3.7, python3.8, python3.9
 	Node: nodejs12, nodejs14`
 }
