@@ -131,24 +131,6 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 	if dc != nil {
 		fmt.Println("Updating dependencies...")
 		command := runtime.DepCommands[p.RuntimeName]
-		if len(dc.Added) > 0 {
-			installCmd := fmt.Sprintf("%s install", command)
-			for _, a := range dc.Added {
-				installCmd = fmt.Sprintf("%s %s", installCmd, a)
-			}
-			o, err := client.UpdateProgDeps(&api.UpdateProgDepsRequest{
-				ProgramID: p.ID,
-				Command:   installCmd,
-			})
-			if err != nil {
-				return err
-			}
-			fmt.Println(o.Output)
-			if o.HasError {
-				fmt.Println()
-				return fmt.Errorf("failed to update dependecies: error on one or more dependencies, no dependencies were added, see output for details")
-			}
-		}
 		if len(dc.Removed) > 0 {
 			uninstallCmd := fmt.Sprintf("%s uninstall", command)
 			for _, d := range dc.Removed {
@@ -165,6 +147,24 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 			if o.HasError {
 				fmt.Println()
 				return fmt.Errorf("failed to remove dependecies: error on one or more dependencies, no dependencies were removed, see output for details")
+			}
+		}
+		if len(dc.Added) > 0 {
+			installCmd := fmt.Sprintf("%s install", command)
+			for _, a := range dc.Added {
+				installCmd = fmt.Sprintf("%s %s", installCmd, a)
+			}
+			o, err := client.UpdateProgDeps(&api.UpdateProgDepsRequest{
+				ProgramID: p.ID,
+				Command:   installCmd,
+			})
+			if err != nil {
+				return err
+			}
+			fmt.Println(o.Output)
+			if o.HasError {
+				fmt.Println()
+				return fmt.Errorf("failed to update dependecies: error on one or more dependencies, no dependencies were added, see output for details")
 			}
 		}
 		err = reloadDeps(m, p)
