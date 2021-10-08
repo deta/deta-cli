@@ -47,7 +47,7 @@ Create a new deta micro with the node (nodejs12.x) runtime in the directory './m
       --project string   project to create the micro under
   -p, --python           create a micro with python runtime
       --runtime string   runtime version
-                         	Python: python3.7, python3.9
+                         	Python: python3.7, python3.8, python3.9
                          	Node: nodejs12, nodejs14
 ```
 

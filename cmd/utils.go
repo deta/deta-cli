@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/deta/deta-cli/api"
@@ -82,6 +84,16 @@ func inSlice(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+func areSlicesEqualNoOrder(a, b []string) bool {
+	// fail fast if len not equal before sorting
+	if len(a) != len(b) {
+		return false
+	}
+	sort.Strings(a)
+	sort.Strings(b)
+	return reflect.DeepEqual(a, b)
 }
 
 // get user info from local storage if cached otherwise from server
