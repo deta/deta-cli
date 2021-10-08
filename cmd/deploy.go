@@ -132,9 +132,15 @@ func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) erro
 		fmt.Println("Updating dependencies...")
 		command := runtime.DepCommands[p.RuntimeName]
 		if len(dc.Removed) > 0 {
-			uninstallCmd := fmt.Sprintf("%s uninstall", command)
-			for _, d := range dc.Removed {
-				uninstallCmd = fmt.Sprintf("%s %s", uninstallCmd, d)
+			uninstallCmd := ""
+			// clean all deps if everything is removed
+			if areSlicesEqualNoOrder(dc.Removed, p.Deps) {
+				uninstallCmd = fmt.Sprintf("%s clean", command)
+			} else {
+				uninstallCmd = fmt.Sprintf("%s uninstall", command)
+				for _, d := range dc.Removed {
+					uninstallCmd = fmt.Sprintf("%s %s", uninstallCmd, d)
+				}
 			}
 			o, err := client.UpdateProgDeps(&api.UpdateProgDepsRequest{
 				ProgramID: p.ID,
