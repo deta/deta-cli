@@ -67,7 +67,7 @@ func pull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = runtimeManager.WriteProgramFiles(o.Files, nil, true)
+	err = runtimeManager.WriteProgramFiles(o.ZipFile, nil, true, progInfo.Runtime)
 	if err != nil {
 		return err
 	}
