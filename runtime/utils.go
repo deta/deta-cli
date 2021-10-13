@@ -65,7 +65,7 @@ func unzip(zipFile []byte, dest string, skipFileNames []string) error {
 
 	for _, f := range r.File {
 		// skip if in skipFilesMap
-		if _, ok := skipFilesMap[strings.TrimPrefix(f.Name, string(os.PathSeparator))]; ok {
+		if _, ok := skipFilesMap[strings.TrimPrefix(filepath.ToSlash(f.Name), "/")]; ok {
 			continue
 		}
 
