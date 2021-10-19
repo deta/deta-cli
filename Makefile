@@ -1,4 +1,4 @@
-DETA_VERSION = v1.2.0-beta
+DETA_VERSION = v1.3.0-beta
 LINUX_PLATFORM = x86_64-linux
 LINUX_ARM_PLATFORM= arm64-linux
 MAC_PLATFORM = x86_64-darwin
