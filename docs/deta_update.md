@@ -27,7 +27,7 @@ File 'env-file' must have env vars of format 'key=value'.
 
 Update the runtime of a deta micro.
 Available runtimes:
-	Python: python3.7, python3.9
+	Python: python3.7, python3.8, python3.9
 	Node: nodejs12, nodejs14
 ```
 
@@ -38,7 +38,7 @@ Available runtimes:
   -h, --help             help for update
   -n, --name string      new name of the micro
   -r, --runtime string   runtime version
-                         	Python: python3.7, python3.9
+                         	Python: python3.7, python3.8, python3.9
                          	Node: nodejs12, nodejs14
 ```
 
