@@ -102,6 +102,18 @@ func clone(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	var cronExpression string
+	if progDetails.ScheduleID > 0 {
+		schedule, err := client.GetSchedule(&api.GetScheduleRequest{
+			ProgramID: progDetails.ID,
+		})
+		if err != nil {
+			cleanup(wd)
+			return err
+		}
+		cronExpression = schedule.Expression
+	}
+
 	progInfo := &runtime.ProgInfo{
 		ID:      progDetails.ID,
 		Space:   progDetails.Space,
@@ -114,6 +126,8 @@ func clone(cmd *cobra.Command, args []string) error {
 		Deps:    progDetails.Deps,
 		Envs:    progDetails.Envs,
 		Public:  progDetails.Public,
+		Visor:   progDetails.Visor,
+		Cron:    cronExpression,
 	}
 
 	fmt.Println("Cloning...")

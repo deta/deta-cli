@@ -531,18 +531,19 @@ type GetProgDetailsRequest struct {
 
 // GetProgDetailsResponse response to get program details
 type GetProgDetailsResponse struct {
-	ID      string   `json:"id"`
-	Space   int64    `json:"space"`
-	Runtime string   `json:"runtime"`
-	Name    string   `json:"name"`
-	Path    string   `json:"path"`
-	Project string   `json:"project"`
-	Account string   `json:"account"`
-	Region  string   `json:"region"`
-	Deps    []string `json:"deps"`
-	Envs    []string `json:"envs"`
-	Public  bool     `json:"public"`
-	Visor   string   `json:"log_level"`
+	ID         string   `json:"id"`
+	Space      int64    `json:"space"`
+	Runtime    string   `json:"runtime"`
+	Name       string   `json:"name"`
+	Path       string   `json:"path"`
+	Project    string   `json:"project"`
+	Account    string   `json:"account"`
+	Region     string   `json:"region"`
+	Deps       []string `json:"deps"`
+	Envs       []string `json:"envs"`
+	Public     bool     `json:"public"`
+	Visor      string   `json:"log_level"`
+	ScheduleID int64    `json:"schedule_id"`
 }
 
 // GetProgDetails get program details
@@ -680,7 +681,7 @@ type GetScheduleRequest struct {
 
 // GetScheduleResponse response to get schedule request
 type GetScheduleResponse struct {
-	ProgramID  string `json:"id"`
+	ScheduleID int64  `json:"id"`
 	Type       string `json:"type"`
 	Expression string `json:"expression"`
 }
