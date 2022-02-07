@@ -154,6 +154,11 @@ func clone(cmd *cobra.Command, args []string) error {
 		cleanup(wd)
 		return err
 	}
+	err = runtimeManager.StoreState()
+	if err != nil {
+		cleanup(wd)
+		return err
+	}
 	fmt.Printf("Successfully cloned deta micro to '%s'\n", wd)
 	return nil
 }
