@@ -381,7 +381,7 @@ func (m *Manager) GetRuntime() (*Runtime, error) {
 func (m *Manager) isHidden(path string) (bool, error) {
 	switch runtime.GOOS {
 	case "windows":
-		return isHiddenWindows(path)
+		return m.isHiddenWindows(path)
 	default:
 		_, filename := filepath.Split(path)
 		return strings.HasPrefix(filename, ".") && filename != ".", nil
