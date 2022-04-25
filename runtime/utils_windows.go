@@ -18,7 +18,11 @@ func (m *Manager) isHiddenWindows(path string) (bool, error) {
 		return true, nil
 	}
 
-	path = filepath.Join(m.rootDir, path)
+	if relPath, err := filepath.Rel(m.rootDir, path); err == nil {
+		path = filepath.Join(m.rootDir, relPath)
+	} else {
+		path = filepath.Join(m.rootDir, path)
+	}
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist){
 		// files that don't exist are taken as hidden
 		return true, nil
@@ -30,9 +34,7 @@ func (m *Manager) isHiddenWindows(path string) (bool, error) {
 	}
 	attrs, err := windows.GetFileAttributes(filePtr)
 	if err != nil {
-		// ignore error and return true because if file attributes are bad or can't get file attributes
-		// the file should be ignored
-		return true, nil
+		return false, err
 	}
 	return attrs&windows.FILE_ATTRIBUTE_HIDDEN != 0, nil
 }
