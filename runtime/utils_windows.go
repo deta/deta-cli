@@ -18,9 +18,7 @@ func (m *Manager) isHiddenWindows(path string) (bool, error) {
 		return true, nil
 	}
 
-	if relPath, err := filepath.Rel(m.rootDir, path); err == nil {
-		path = filepath.Join(m.rootDir, relPath)
-	} else {
+	if !filepath.IsAbs(path){
 		path = filepath.Join(m.rootDir, path)
 	}
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist){
