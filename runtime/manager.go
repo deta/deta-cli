@@ -12,7 +12,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -379,13 +378,8 @@ func (m *Manager) GetRuntime() (*Runtime, error) {
 
 // if a file or dir is hidden
 func (m *Manager) isHidden(path string) (bool, error) {
-	switch runtime.GOOS {
-	case "windows":
-		return m.isHiddenWindows(path)
-	default:
-		_, filename := filepath.Split(path)
-		return strings.HasPrefix(filename, ".") && filename != ".", nil
-	}
+	_, filename := filepath.Split(path)
+	return strings.HasPrefix(filename, ".") && filename != ".", nil
 }
 
 // should skip if the file or dir should be skipped
