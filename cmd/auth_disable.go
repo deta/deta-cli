@@ -1,6 +1,9 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/deta/deta-cli/cmd/logic"
+	"github.com/spf13/cobra"
+)
 
 var (
 	authDisableCmd = &cobra.Command{
@@ -16,5 +19,5 @@ func init() {
 }
 
 func disableAuth(cmd *cobra.Command, args []string) error {
-	return updateAuth(false, args)
+	return logic.UpdateAuth(client, false, args)
 }

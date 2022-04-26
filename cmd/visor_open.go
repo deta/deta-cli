@@ -6,9 +6,6 @@ import (
 )
 
 var (
-	// set with Makefile during compilation
-	visorURL string
-
 	visorOpenCmd = &cobra.Command{
 		Use:   "open [path]",
 		Short: "Open deta visor page for a deta micro",

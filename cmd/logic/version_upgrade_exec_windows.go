@@ -1,13 +1,13 @@
 // +build windows
 
-package cmd
+package logic
 
 import (
 	"fmt"
 	"os/exec"
 )
 
-func upgradeWin() error {
+func upgradeWin(versionFlag string) error {
 	msg := "Upgrading deta cli"
 	cmd := "iwr https://get.deta.dev/cli.ps1 -useb | iex"
 
