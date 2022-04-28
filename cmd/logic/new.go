@@ -23,46 +23,30 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 	if (nodeFlag || pythonFlag) && len(runtimeName) != 0 {
 		return fmt.Errorf("can not set both node/python flags and runtime flag")
 	}
-
-	var wd string
-	if len(args) == 0 {
-		cd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		wd = cd
-	} else {
-		wd = args[0]
-	}
+	
+	wd, err := getWorkingDirectory(args)
+	if err != nil {return err}
 
 	runtimeManager, err := runtime.NewManager(&wd, true)
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
 
 	// check if program root dir is empty
 	isEmpty, err := runtimeManager.IsProgDirEmpty()
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
 
 	progRuntime, err := runtimeManager.GetRuntime()
 	if err != nil {
 		if errors.Is(err, runtime.ErrNoEntrypoint) && !isEmpty {
 			if progName == "" {
-				os.Stderr.WriteString(fmt.Sprintf("No entrypoint file found in '%s'. Please, provide a name or path to create a new micro elsewhere. See `deta new --help`.'\n", wd))
-				return nil
+				return fmt.Errorf("no entrypoint file found in '%s'. Please, provide a name or path to create a new micro elsewhere. See `deta new --help`", wd)
 			}
 			runtimeManager.Clean()
 			wd = filepath.Join(wd, progName)
 			err := os.MkdirAll(wd, 0760)
-			if err != nil {
-				return err
-			}
+			if err != nil {return err}
+
 			runtimeManager, err = runtime.NewManager(&wd, true)
-			if err != nil {
-				return err
-			}
+			if err != nil {return err}
 		}
 	}
 
@@ -74,54 +58,29 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 
 	// checks if a program is already present in the working directory
 	isInitialized, err := runtimeManager.IsInitialized()
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
+
 	if isInitialized {
 		return fmt.Errorf("a deta micro already present in '%s'", wd)
 	}
 
 	isEmpty, err = runtimeManager.IsProgDirEmpty()
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
 	if !isEmpty && len(runtimeName) == 0 {
 		progRuntime, err = runtimeManager.GetRuntime()
-		if err != nil {
-			return err
-		}
-		if nodeFlag && progRuntime.Name != runtime.Node {
-			return fmt.Errorf("'%s' does not contain node entrypoint file", wd)
-		} else if pythonFlag && progRuntime.Name != runtime.Python {
-			return fmt.Errorf("'%s' does not contain python entrypoint file", wd)
-		}
+		if err != nil {return err}
+
+		err := handleFlagRuntimeMismatch(wd, progRuntime, nodeFlag, pythonFlag)
+		if err != nil {return err}
+
 	} else {
-		if nodeFlag {
-			progRuntime = &runtime.Runtime{
-				Name:    runtime.Node,
-				Version: runtime.GetDefaultRuntimeVersion(runtime.Node),
-			}
-		} else if pythonFlag {
-			progRuntime = &runtime.Runtime{
-				Name:    runtime.Python,
-				Version: runtime.GetDefaultRuntimeVersion(runtime.Python),
-			}
-		} else if len(runtimeName) != 0 {
-			progRuntime, err = parseRuntime(runtimeName)
-			if err != nil {
-				return err
-			}
-		} else {
-			os.Stderr.WriteString("Missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python'\n")
-			return nil
-		}
+		progRuntime, err = HandleRuntimeArgs(nodeFlag, progRuntime, pythonFlag, runtimeName, err)
+		if err != nil {return err}
 	}
 
 	// get user information
 	userInfo, err := getUserInfo(runtimeManager, client)
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
 
 	project := userInfo.DefaultProject
 	if projectName != "" {
@@ -137,9 +96,7 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 
 	// send new program request
 	res, err := client.NewProgram(req)
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
 
 	// save new program info
 	newProgInfo := &runtime.ProgInfo{
@@ -157,9 +114,7 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 		Visor:   res.Visor,
 	}
 	err = runtimeManager.StoreProgInfo(newProgInfo)
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
 
 	msg := "Successfully created a new micro"
 	fmt.Println(msg)
@@ -180,14 +135,10 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 			Account:   res.Account,
 			Region:    res.Region,
 		})
-		if err != nil {
-			return err
-		}
+		if err != nil {return err}
 		// write downloaded files to dir
 		err = runtimeManager.WriteProgramFiles(o.ZipFile, nil, true, res.Runtime)
-		if err != nil {
-			return err
-		}
+		if err != nil {return err}
 		// store the program state
 		// ignore error here as it's okay
 		// if state is not stored for new program
@@ -196,9 +147,7 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 	}
 
 	c, err := runtimeManager.GetChanges()
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
 
 	if c != nil {
 		_, err = client.Deploy(&api.DeployRequest{
@@ -209,15 +158,11 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 			Account:     res.Account,
 			Region:      res.Region,
 		})
-		if err != nil {
-			return err
-		}
+		if err != nil {return err}
 	}
 
 	dc, err := runtimeManager.GetDepChanges()
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
 	runtimeManager.StoreState()
 
 	if dc != nil {
@@ -232,9 +177,7 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 				ProgramID: res.ID,
 				Command:   installCmd,
 			})
-			if err != nil {
-				return err
-			}
+			if err != nil {return err}
 			fmt.Println(o.Output)
 			if o.HasError {
 				fmt.Println()
@@ -246,12 +189,52 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 				Space:   userInfo.DefaultSpace,
 				Project: project,
 			})
-			if err != nil {
-				return err
-			}
+			if err != nil {return err}
 			newProgInfo.Deps = progDetails.Deps
 			runtimeManager.StoreProgInfo(newProgInfo)
 		}
 	}
 	return nil
+}
+
+func handleFlagRuntimeMismatch(wd string, progRuntime *runtime.Runtime, nodeFlag bool, pythonFlag bool) (error) {
+	var err error
+	if nodeFlag && progRuntime.Name != runtime.Node {
+		err = fmt.Errorf("'%s' does not contain node entrypoint file", wd)
+	} else if pythonFlag && progRuntime.Name != runtime.Python {
+		err = fmt.Errorf("'%s' does not contain python entrypoint file", wd)
+	}
+	return err
+}
+
+func getWorkingDirectory(args []string) (string, error) {
+	var wd string
+	var cd string
+	var err error
+	if len(args) == 0 {
+		cd, err = os.Getwd()
+		wd = cd
+	} else {
+		wd = args[0]
+	}
+	return wd, err
+}
+
+func HandleRuntimeArgs(nodeFlag bool, progRuntime *runtime.Runtime, pythonFlag bool, runtimeName string, err error) (*runtime.Runtime, error) {
+	if nodeFlag {
+		progRuntime = &runtime.Runtime{
+			Name:    runtime.Node,
+			Version: runtime.GetDefaultRuntimeVersion(runtime.Node),
+		}
+	} else if pythonFlag {
+		progRuntime = &runtime.Runtime{
+			Name:    runtime.Python,
+			Version: runtime.GetDefaultRuntimeVersion(runtime.Python),
+		}
+	} else if len(runtimeName) != 0 {
+		progRuntime, err = parseRuntime(runtimeName)
+	} else {
+		err = fmt.Errorf("missing runtime. Please, choose a runtime with 'deta new --node' or 'deta new --python'")
+	}
+	return progRuntime, err
 }
