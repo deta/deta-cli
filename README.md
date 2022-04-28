@@ -16,4 +16,4 @@ Please review [our security policy](https://github.com/deta/deta-cli/security/po
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE) for more information.
+The MIT License (MIT). Please see the [license file](LICENSE) for more information.
