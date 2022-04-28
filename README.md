@@ -4,7 +4,7 @@ The Deta CLI tool provides a number of helpful commands to help you with your De
 
 ## Installation
 
-The installation guide for your Operating System can be found on the [Deta website](https://docs.deta.sh/docs/cli/install).
+The installation guide for your operating system can be found on the [Deta website](https://docs.deta.sh/docs/cli/install).
 
 ## Official Documentation
 
