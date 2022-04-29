@@ -74,7 +74,7 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 		if err != nil {return err}
 
 	} else {
-		progRuntime, err = HandleRuntimeArgs(nodeFlag, progRuntime, pythonFlag, runtimeName, err)
+		progRuntime, err = HandleRuntimeArgs(nodeFlag, pythonFlag, runtimeName)
 		if err != nil {return err}
 	}
 
@@ -220,7 +220,10 @@ func getWorkingDirectory(args []string) (string, error) {
 	return wd, err
 }
 
-func HandleRuntimeArgs(nodeFlag bool, progRuntime *runtime.Runtime, pythonFlag bool, runtimeName string, err error) (*runtime.Runtime, error) {
+func HandleRuntimeArgs(nodeFlag bool, pythonFlag bool, runtimeName string) (*runtime.Runtime, error) {
+	var progRuntime *runtime.Runtime
+	var err error
+
 	if nodeFlag {
 		progRuntime = &runtime.Runtime{
 			Name:    runtime.Node,
