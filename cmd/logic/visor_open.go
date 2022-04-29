@@ -37,7 +37,7 @@ func VisorOpen(client *api.DetaClient, args []string) error {
 		return fmt.Errorf(fmt.Sprintf("no deta micro present in '%s'", wd))
 	}
 
-	userInfo, err := getUserInfo(runtimeManager, client)
+	userInfo, err := GetUserInfo(runtimeManager, client)
 	if err != nil {
 		return err
 	}

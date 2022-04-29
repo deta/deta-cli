@@ -34,7 +34,7 @@ func Details(client *api.DetaClient, args []string) error {
 	if progInfo == nil {
 		return fmt.Errorf("failed to get deta micro details")
 	}
-	u, err := getUserInfo(runtimeManager, client)
+	u, err := GetUserInfo(runtimeManager, client)
 	if err != nil {
 		return err
 	}

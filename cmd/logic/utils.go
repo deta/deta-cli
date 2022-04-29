@@ -98,7 +98,7 @@ func areSlicesEqualNoOrder(a, b []string) bool {
 
 // get user info from local storage if cached otherwise from server
 // saves user info to local storage if not cached
-func getUserInfo(rm *runtime.Manager, client *api.DetaClient) (*runtime.UserInfo, error) {
+func GetUserInfo(rm *runtime.Manager, client *api.DetaClient) (*runtime.UserInfo, error) {
 	u, err := rm.GetUserInfo()
 	if err != nil {
 		return nil, err

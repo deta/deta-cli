@@ -13,7 +13,7 @@ func ListProjects(client *api.DetaClient, args []string) error {
 		return err
 	}
 
-	u, err := getUserInfo(runtimeManager, client)
+	u, err := GetUserInfo(runtimeManager, client)
 	if err != nil {
 		return err
 	}

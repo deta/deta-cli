@@ -79,7 +79,7 @@ func NewProgram(client *api.DetaClient, progName string, projectName string, run
 	}
 
 	// get user information
-	userInfo, err := getUserInfo(runtimeManager, client)
+	userInfo, err := GetUserInfo(runtimeManager, client)
 	if err != nil {return err}
 
 	project := userInfo.DefaultProject

@@ -64,7 +64,7 @@ func Clone(client *api.DetaClient, progName string, projectName string, args []s
 		return err
 	}
 
-	u, err := getUserInfo(runtimeManager, client)
+	u, err := GetUserInfo(runtimeManager, client)
 	if err != nil {
 		return err
 	}
