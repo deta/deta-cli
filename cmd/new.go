@@ -221,7 +221,7 @@ func new(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	c, err := runtimeManager.GetChanges()
+	c, err := runtimeManager.GetChanges(false)
 	if err != nil {
 		return err
 	}

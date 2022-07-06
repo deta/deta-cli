@@ -10,6 +10,8 @@ import (
 )
 
 var (
+	forceFlag bool
+
 	deployCmd = &cobra.Command{
 		Use:     "deploy [path]",
 		Short:   "Deploy a deta micro",
@@ -20,6 +22,7 @@ var (
 )
 
 func init() {
+	deployCmd.Flags().BoolVarP(&forceFlag, "force", "f", false, "deploys all files by ignoring the current state")
 	rootCmd.AddCommand(deployCmd)
 }
 
@@ -55,7 +58,7 @@ func deploy(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	err = deployChanges(runtimeManager, progInfo, false)
+	err = deployChanges(runtimeManager, progInfo, false, forceFlag)
 	if err != nil {
 		return err
 	}
@@ -84,8 +87,8 @@ func reloadDeps(m *runtime.Manager, p *runtime.ProgInfo) error {
 	return nil
 }
 
-func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher bool) error {
-	c, err := m.GetChanges()
+func deployChanges(m *runtime.Manager, p *runtime.ProgInfo, isWatcher, forceDeploy bool) error {
+	c, err := m.GetChanges(forceDeploy)
 	if err != nil {
 		return err
 	}

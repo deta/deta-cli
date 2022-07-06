@@ -17,7 +17,7 @@ func stateMapFromBytes(data []byte) (stateMap, error) {
 
 // StateChanges changes in state of files of the root directory
 type StateChanges struct {
-	Changes   map[string]string // map of files to content
-	Deletions []string
+	Changes     map[string]string // map of files to content
+	Deletions   []string
 	BinaryFiles map[string]string
 }

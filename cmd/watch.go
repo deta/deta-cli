@@ -54,7 +54,7 @@ func watch(cmd *cobra.Command, args []string) error {
 	}
 
 	// do an initial deployment
-	err = deployChanges(runtimeManager, progInfo, true)
+	err = deployChanges(runtimeManager, progInfo, true, false)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func watch(cmd *cobra.Command, args []string) error {
 	for {
 		<-c
 		time.Sleep(100 * time.Millisecond)
-		err := deployChanges(runtimeManager, progInfo, true)
+		err := deployChanges(runtimeManager, progInfo, true, false)
 		if err != nil {
 			return err
 		}

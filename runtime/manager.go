@@ -555,7 +555,7 @@ func (m *Manager) readAll() (*StateChanges, error) {
 }
 
 // GetChanges checks if the state has changed in the root directory
-func (m *Manager) GetChanges() (*StateChanges, error) {
+func (m *Manager) GetChanges(ignoreCurrentState bool) (*StateChanges, error) {
 	r, err := m.GetRuntime()
 	if err != nil {
 		return nil, err
@@ -564,6 +564,10 @@ func (m *Manager) GetChanges() (*StateChanges, error) {
 	sc := &StateChanges{
 		Changes:     make(map[string]string),
 		BinaryFiles: make(map[string]string),
+	}
+
+	if ignoreCurrentState {
+		return m.readAll()
 	}
 
 	storedState, err := m.getStoredState()
