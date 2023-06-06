@@ -1,19 +1,5 @@
 # Deta CLI
 
-The Deta CLI tool provides a number of helpful commands to help you with your Deta development.
+The Deta CLI for Deta Cloud has been deprecated and this repository has been archived. 
 
-## Installation
-
-The installation guide for your operating system can be found on the [Deta website](https://docs.deta.sh/docs/cli/install).
-
-## Official Documentation
-
-Documentation for the Deta CLI can be found on the [Deta website](https://docs.deta.sh/docs/cli/commands).
-
-## Security Vulnerabilities
-
-Please review [our security policy](https://github.com/deta/deta-cli/security/policy) on how to report security vulnerabilities.
-
-## License
-
-The MIT License (MIT). Please see the [license file](LICENSE) for more information.
+If you are looking for the Deta Space CLI please refer to  [this repository](https://github.com/deta/space-cli).
